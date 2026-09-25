@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Menú de programas · Información en Salud</title>
+<style>
+  :root{
+    --bg:#F5F5F5; --panel:#FFFFFF; --ink:#2B2320; --inkSoft:#8A8079; --line:#E7E3DD;
+    --red:#A41E22; --redDark:#7A1418; --redSoft:#F1DCDD; --gold:#C9A34E; --goldSoft:#F3E9D2;
+    --brown:#B89B6B; --verde:#2E7D32; --verdeSoft:#E8F3E9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .contenedor{max-width:1240px;margin:0 auto;padding:22px 22px 60px}
+  header.barra{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,var(--red) 0%,var(--redDark) 100%);
+    color:#fff;border-radius:16px;padding:22px 26px;box-shadow:0 10px 26px rgba(164,30,34,.24);flex-wrap:wrap}
+  header.barra .marca{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+  h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(20px,3vw,27px);margin:0;line-height:1.15}
+  .sub{font-size:12px;opacity:.85;margin-top:3px}
+  .adscripcion{margin-left:auto;text-align:right;font-size:12.5px;font-weight:700;letter-spacing:.02em;line-height:1.45}
+  .adscripcion span{color:var(--gold);display:block}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:18px}
+  .panel h2{font-size:14px;font-weight:700;margin:0 0 4px}
+  .panel p{margin:0;font-size:12.5px;color:var(--inkSoft)}
+
+  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:18px}
+  a.opcion{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 18px;
+    border-top:4px solid var(--red);transition:border-color .15s,background .15s,box-shadow .15s}
+  a.opcion:hover{background:var(--redSoft);border-color:var(--red);box-shadow:0 8px 20px rgba(164,30,34,.14)}
+  a.opcion:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .opcion .cabeza{display:flex;align-items:center;gap:12px}
+  .opcion .num{width:40px;height:40px;border-radius:11px;background:var(--red);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-family:Georgia,"Times New Roman",serif;font-size:20px}
+  .opcion .titulo{font-family:Georgia,"Times New Roman",serif;font-size:19px;line-height:1.2}
+  .opcion .desc{font-size:12.5px;color:var(--inkSoft);line-height:1.55;flex:1}
+  .opcion .etiquetas{display:flex;gap:6px;flex-wrap:wrap}
+  .etiqueta{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;display:inline-block;white-space:nowrap;
+    background:var(--goldSoft);color:#7A5B12}
+  .opcion .abrir{align-self:flex-start;font-size:13px;font-weight:700;border-radius:9px;padding:8px 14px;
+    background:var(--red);color:#fff}
+  a.opcion:hover .abrir{background:var(--redDark)}
+
+  .aviso{border-radius:12px;padding:12px 15px;margin-top:18px;font-size:12.5px;line-height:1.6;
+    background:var(--goldSoft);border:1px solid var(--gold)}
+  .pie-pagina{text-align:center;font-size:11.5px;color:var(--inkSoft);margin-top:26px;line-height:1.6}
+  @media(max-width:760px){.adscripcion{margin-left:0;text-align:left;width:100%}}
+  @media(prefers-reduced-motion:reduce){a.opcion{transition:none}}
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header class="barra">
+    <div class="marca">✚</div>
+    <div>
+      <h1>Sistemas de información en salud</h1>
+      <div class="sub">Menú de programas de análisis, cotejo y auditoría de bases estadísticas</div>
+    </div>
+    <div class="adscripcion">
+      DIRECCIÓN DE INFORMACIÓN Y TECNOLOGÍAS.
+      <span>DEPARTAMENTO DE INFORMACIÓN EN SALUD, ANÁLISIS E INTERPRETACIÓN.</span>
+    </div>
+  </header>
+
+  <div class="panel">
+    <h2>Selecciona un programa</h2>
+    <p>Cada programa se abre en una pestaña nueva, así puedes volver a este menú en cualquier momento.</p>
+  </div>
+
+  <nav class="menu" aria-label="Programas disponibles">
+
+    <a class="opcion" href="Tablero_Sistemas_Estadisticos.html" target="_blank" rel="noopener">
+      <div class="cabeza">
+        <div class="num">1</div>
+        <div class="titulo">Tableros de sistemas estadísticos</div>
+      </div>
+      <div class="desc">Tableros interactivos por municipio, unidad, mes y causa para consultar y exportar la información de los sistemas estadísticos.</div>
+      <div class="etiquetas">
+        <span class="etiqueta">Defunciones</span>
+        <span class="etiqueta">Muerte fetal</span>
+        <span class="etiqueta">Nacimientos</span>
+        <span class="etiqueta">Egresos</span>
+        <span class="etiqueta">Urgencias</span>
+      </div>
+      <span class="abrir">Abrir tableros</span>
+    </a>
+
+    <a class="opcion" href="Confronta_Egresos_Urgencias_vs_Defunciones.html" target="_blank" rel="noopener">
+      <div class="cabeza">
+        <div class="num">2</div>
+        <div class="titulo">Confronta Egresos-Urgencias vs Defunciones</div>
+      </div>
+      <div class="desc">Cotejo de la base de defunciones (OCURRENCIA) contra los egresos hospitalarios y las atenciones de urgencias, con resumen por CLUES y registros no localizados.</div>
+      <div class="etiquetas">
+        <span class="etiqueta">Cotejo por folio y nombre</span>
+        <span class="etiqueta">Exporta a Excel</span>
+      </div>
+      <span class="abrir">Abrir confronta</span>
+    </a>
+
+    <a class="opcion" href="Nacimientos.html" target="_blank" rel="noopener">
+      <div class="cabeza">
+        <div class="num">3</div>
+        <div class="titulo">Auditoría de Nacimientos</div>
+      </div>
+      <div class="desc">Revisión de calidad de la base de nacimientos: madres menores de edad, CURP genérico o inválido, anomalías sin codificar y posibles duplicados.</div>
+      <div class="etiquetas">
+        <span class="etiqueta">Calidad del dato</span>
+        <span class="etiqueta">Duplicados</span>
+      </div>
+      <span class="abrir">Abrir auditoría</span>
+    </a>
+
+  </nav>
+
+  <div class="aviso">
+    Guarda este menú en la misma carpeta que los tres programas para que los enlaces funcionen:
+    <b>Tablero_Sistemas_Estadisticos.html</b>, <b>Confronta_Egresos_Urgencias_vs_Defunciones.html</b> y <b>Nacimientos.html</b>.
+  </div>
+
+  <div class="pie-pagina">
+    Secretaría de Salud de Tamaulipas · Los archivos se leen en tu navegador; ninguno se sube a un servidor.
+  </div>
+</div>
+</body>
+</html>

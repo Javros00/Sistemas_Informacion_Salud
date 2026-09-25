@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cotejo de defunciones · OCURRENCIA contra Egresos y Urgencias</title>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin></script>
+<script src="https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx-js-style.min.js" crossorigin></script>
+<style>
+  :root{
+    --bg:#F5F5F5; --panel:#FFFFFF; --ink:#2B2320; --inkSoft:#8A8079; --line:#E7E3DD;
+    --red:#A41E22; --redDark:#7A1418; --redSoft:#F1DCDD; --gold:#C9A34E; --goldSoft:#F3E9D2;
+    --brown:#B89B6B; --verde:#2E7D32; --verdeSoft:#E8F3E9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .contenedor{max-width:1240px;margin:0 auto;padding:22px 22px 60px}
+  header.barra{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,var(--red) 0%,var(--redDark) 100%);
+    color:#fff;border-radius:16px;padding:22px 26px;box-shadow:0 10px 26px rgba(164,30,34,.24);flex-wrap:wrap}
+  header.barra .marca{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+  h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(20px,3vw,27px);margin:0;line-height:1.15}
+  .sub{font-size:12px;opacity:.85;margin-top:3px}
+  .adscripcion{margin-left:auto;text-align:right;font-size:12.5px;font-weight:700;letter-spacing:.02em;line-height:1.45}
+  .adscripcion span{color:var(--gold);display:block}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:18px}
+  .panel h2{font-size:14px;font-weight:700;margin:0 0 10px}
+  .cargas{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-top:18px}
+  .zona{border:2px dashed var(--line);border-radius:14px;padding:22px 18px;text-align:center;background:var(--panel);
+    transition:border-color .15s,background .15s;cursor:pointer}
+  .zona:hover,.zona.encima{border-color:var(--red);background:var(--redSoft)}
+  .zona.lista{border-style:solid;border-color:var(--verde);background:var(--verdeSoft);cursor:default}
+  .zona .titulo{font-size:15px;font-weight:700}
+  .zona .pista{font-size:12px;color:var(--inkSoft);margin-top:5px}
+  .zona .estado{font-size:12.5px;color:var(--ink);margin-top:8px;font-weight:600}
+  button{font-family:inherit;font-size:13px;font-weight:700;border-radius:9px;padding:9px 15px;cursor:pointer;border:1px solid transparent}
+  .btn-rojo{background:var(--red);color:#fff}
+  .btn-rojo:disabled{background:var(--inkSoft);opacity:.55;cursor:default}
+  .btn-linea{background:var(--redSoft);color:var(--red);border-color:var(--red)}
+  .btn-suave{background:var(--bg);color:var(--ink);border-color:var(--line)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi.destacado{background:var(--redSoft);border-color:var(--red)}
+  .kpi.bueno{background:var(--verdeSoft);border-color:var(--verde)}
+  .kpi .et{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--inkSoft)}
+  .kpi .val{font-family:Georgia,serif;font-size:26px;line-height:1.15;margin-top:3px}
+  .kpi.destacado .val{color:var(--red)}
+  .kpi.bueno .val{color:var(--verde)}
+  .kpi .pie{font-size:10.5px;color:var(--inkSoft);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    background:var(--goldSoft);padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0}
+  td{padding:7px 10px;border-bottom:1px solid var(--line)}
+  td.num,th.num{text-align:right}
+  .marco{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .desplaza{max-height:420px;overflow:auto}
+  .pestanas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .pestana{font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel);color:var(--inkSoft);cursor:pointer}
+  .pestana.activa{background:var(--red);color:#fff;border-color:var(--red)}
+  .etiqueta{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;display:inline-block}
+  .et-folio{background:var(--verdeSoft);color:var(--verde)}
+  .et-nombre{background:var(--goldSoft);color:#7A5B12}
+  .et-sin{background:var(--redSoft);color:var(--red)}
+  .estado{font-size:12.5px;color:var(--inkSoft)}
+  .oculto{display:none}
+  .fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .crece{margin-left:auto}
+  .aviso{border-radius:12px;padding:12px 15px;margin-top:14px;font-size:12.5px;line-height:1.6}
+  .aviso.nota{background:var(--goldSoft);border:1px solid var(--gold)}
+  .aviso.alerta{background:var(--redSoft);border:1.5px solid var(--red)}
+  .barrita{height:8px;background:var(--bg);border-radius:999px;overflow:hidden;min-width:70px}
+  .barrita i{display:block;height:100%;background:var(--verde)}
+  input[type=search]{font-family:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;min-width:220px}
+  .pie-pagina{text-align:center;font-size:11.5px;color:var(--inkSoft);margin-top:26px;line-height:1.6}
+  @media(max-width:760px){.adscripcion{margin-left:0;text-align:left;width:100%}}
+  .filtros{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+  .filtros label{display:flex;align-items:center;gap:6px;font-weight:600}
+  select{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;max-width:320px}
+
+  .et-ambas{background:#E4ECF6;color:#1F4E8C}
+  .kpi.azul{background:#E4ECF6;border-color:#1F4E8C}
+  .kpi.azul .val{color:#1F4E8C}
+  .filtros{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+  .filtros label{display:flex;align-items:center;gap:6px;font-weight:600}
+  select{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;max-width:320px}
+  .zona .opcional{font-size:10.5px;font-weight:700;color:var(--inkSoft);margin-left:4px}
+  .dato{display:block;font-size:11px;color:var(--inkSoft);margin-top:2px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  th.grupo{text-align:center;background:var(--bg)}
+  .meses{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .mes{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px;background:var(--panel);cursor:pointer}
+  .mes:has(input:checked){border-color:var(--red);background:var(--redSoft);color:var(--red)}
+  .mes input{margin:0;cursor:pointer}
+  .mes .cuenta{font-weight:400;color:var(--inkSoft)}
+  .mes:has(input:checked) .cuenta{color:var(--red)}
+  .enlaces{display:flex;gap:10px;align-items:center;margin-left:auto}
+  .enlace{background:none;border:none;color:var(--red);font-weight:700;font-size:12px;padding:2px 4px;cursor:pointer;text-decoration:underline}
+
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header class="barra">
+    <div class="marca">✚</div>
+    <div>
+      <h1>Cotejo de defunciones</h1>
+      <div class="sub">Base de defunciones (OCURRENCIA) contra los egresos hospitalarios y las atenciones de urgencias</div>
+    </div>
+    <div class="adscripcion">
+      DIRECCIÓN DE INFORMACIÓN Y TECNOLOGÍAS.
+      <span>DEPARTAMENTO DE INFORMACIÓN EN SALUD, ANÁLISIS E INTERPRETACIÓN.</span>
+    </div>
+  </header>
+
+  <div class="cargas">
+    <div class="zona" id="zonaOcurrencia">
+      <div class="titulo">1 · Base de Defunciones (OCURRENCIA)</div>
+      <div class="pista">Solo defunciones con sitio de defunción Servicios de Salud IMSS Bienestar</div>
+      <div class="estado" id="estadoOcurrencia">Arrastra el archivo o haz clic para elegirlo</div>
+      <input type="file" id="archivoOcurrencia" accept=".xlsx,.xlsm" class="oculto" />
+    </div>
+    <div class="zona" id="zonaEgresos">
+      <div class="titulo">2 · Base de Egresos</div>
+      <div class="pista">Solo registros con motivo_egreso_desp = DEFUNCIÓN</div>
+      <div class="estado" id="estadoEgresos">Arrastra el archivo o haz clic para elegirlo</div>
+      <input type="file" id="archivoEgresos" accept=".xlsx,.xlsm" class="oculto" />
+    </div>
+    <div class="zona" id="zonaUrgencias">
+      <div class="titulo">3 · Base de Urgencias</div>
+      <div class="pista">Solo registros con alta_por_des = DEFUNCIÓN</div>
+      <div class="estado" id="estadoUrgencias">Arrastra el archivo o haz clic para elegirlo</div>
+      <input type="file" id="archivoUrgencias" accept=".xlsx,.xlsm" class="oculto" />
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Qué defunciones de OCURRENCIA se cotejan</h2>
+    <div class="filtros">
+      <span>Solo las que tienen sitio de defunción <strong>Servicios de Salud IMSS Bienestar</strong></span>
+      <label>Unidad (CLUES)
+        <select id="filtroClues"><option value="">Todas</option></select>
+      </label>
+      <span class="enlaces">
+        <button type="button" class="enlace" id="mesesTodos">Marcar todos los meses</button>
+        <button type="button" class="enlace" id="mesesNinguno">Desmarcar</button>
+      </span>
+    </div>
+    <div class="meses" id="filtroMes"><span class="estado">Meses de defunción: se llenan al cargar la base.</span></div>
+    <div class="estado" id="estadoFiltro" style="margin-top:8px">Carga la base de OCURRENCIA para ver cuántos registros entran al cotejo.</div>
+  </div>
+
+  <div class="fila" style="margin-top:16px">
+    <button class="btn-rojo" id="cotejar" disabled>Cotejar las bases</button>
+    <button class="btn-suave" id="limpiar">Limpiar</button>
+    <span class="estado" id="estadoGeneral">Carga OCURRENCIA y al menos una de las otras dos bases.</span>
+  </div>
+
+  <div id="resultado" class="oculto">
+    <div class="panel">
+      <div class="fila">
+        <h2 style="margin:0">Resumen del cotejo</h2>
+        <div class="crece fila">
+          <button class="btn-rojo" id="expResumen">Resumen por CLUES</button>
+          <button class="btn-linea" id="expEncontrados">Coincidencias</button>
+          <button class="btn-linea" id="expFaltantes">No localizados</button>
+          <button class="btn-suave" id="expTodo">Todo en un libro</button>
+        </div>
+      </div>
+      <div class="kpis" style="margin-top:12px" id="kpis"></div>
+      <div id="avisos"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Resumen por CLUES</h2>
+      <div class="marco desplaza">
+        <table>
+          <thead>
+            <tr>
+              <th colspan="3"></th>
+              <th colspan="3" class="grupo">En Egresos</th>
+              <th colspan="3" class="grupo">En Urgencias</th>
+              <th colspan="5"></th>
+            </tr>
+            <tr>
+              <th>CLUES</th><th>Unidad médica</th><th class="num">Defunciones IMSS Bienestar</th>
+              <th class="num">Por folio</th><th class="num">Por nombre</th><th class="num">Total</th>
+              <th class="num">Por folio</th><th class="num">Por nombre</th><th class="num">Total</th>
+              <th class="num">En ambas</th><th class="num">Localizadas</th><th class="num">No localizados</th>
+              <th class="num">% localizado</th><th style="width:110px"></th>
+            </tr>
+          </thead>
+          <tbody id="cuerpoClues"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="fila">
+        <h2 style="margin:0">Detalle</h2>
+        <div class="crece fila">
+          <input type="search" id="buscar" placeholder="Buscar por folio, nombre o CLUES" />
+        </div>
+      </div>
+      <div class="pestanas" style="margin-top:12px" id="pestanas"></div>
+      <div class="marco desplaza">
+        <table>
+          <thead><tr id="encabezadoDetalle"></tr></thead>
+          <tbody id="cuerpoDetalle"></tbody>
+        </table>
+      </div>
+      <div class="estado" id="pieDetalle" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="pie-pagina">
+    Secretaría de Salud de Tamaulipas · Los archivos se leen en tu navegador; ninguno se sube a un servidor.
+  </div>
+</div>
+
+<script>
+// ===========================================================================
+// LECTOR DE ARCHIVOS XLSX GRANDES
+// Un .xlsx es un ZIP. La librería normal descomprime la hoja completa en
+// memoria: en un archivo de 100 000 renglones eso son cientos de megabytes y
+// el navegador se queda sin memoria. Aquí la hoja se descomprime por partes y
+// solo se guardan las columnas que el módulo necesita.
+// ===========================================================================
+const XLSX_STREAM_DESDE = 8 * 1024 * 1024; // a partir de este tamaño conviene
+
+function hayLecturaPorPartes() {
+  return typeof DecompressionStream !== "undefined" && typeof TextDecoderStream !== "undefined";
+}
+
+function letrasAIndice(letras) {
+  let n = 0;
+  for (let i = 0; i < letras.length; i++) n = n * 26 + (letras.charCodeAt(i) - 64);
+  return n - 1;
+}
+
+function desescaparXml(t) {
+  if (t.indexOf("&") < 0) return t;
+  return t
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, "&");
+}
+
+// --- Directorio del ZIP -----------------------------------------------------
+async function leerDirectorioZip(file) {
+  const cola = Math.min(file.size, 66000);
+  const buf = new DataView(await file.slice(file.size - cola).arrayBuffer());
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= 0; i--) {
+    if (buf.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("El archivo no parece un .xlsx válido.");
+  const numEntradas = buf.getUint16(eocd + 10, true);
+  const tamDirectorio = buf.getUint32(eocd + 12, true);
+  const inicioDirectorio = buf.getUint32(eocd + 16, true);
+  if (inicioDirectorio === 0xffffffff) throw new Error("zip64");
+
+  const dv = new DataView(await file.slice(inicioDirectorio, inicioDirectorio + tamDirectorio).arrayBuffer());
+  const decoder = new TextDecoder();
+  const entradas = new Map();
+  let p = 0;
+  for (let i = 0; i < numEntradas && p + 46 <= dv.byteLength; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(p + 10, true);
+    const comprimido = dv.getUint32(p + 20, true);
+    const largoNombre = dv.getUint16(p + 28, true);
+    const largoExtra = dv.getUint16(p + 30, true);
+    const largoComentario = dv.getUint16(p + 32, true);
+    const desplazamiento = dv.getUint32(p + 42, true);
+    const nombre = decoder.decode(new Uint8Array(dv.buffer, dv.byteOffset + p + 46, largoNombre));
+    entradas.set(nombre, { metodo, comprimido, desplazamiento });
+    p += 46 + largoNombre + largoExtra + largoComentario;
+  }
+  return entradas;
+}
+
+async function flujoDeEntrada(file, entrada) {
+  const cabecera = new DataView(await file.slice(entrada.desplazamiento, entrada.desplazamiento + 30).arrayBuffer());
+  if (cabecera.getUint32(0, true) !== 0x04034b50) throw new Error("Cabecera del ZIP no reconocida.");
+  const largoNombre = cabecera.getUint16(26, true);
+  const largoExtra = cabecera.getUint16(28, true);
+  const inicio = entrada.desplazamiento + 30 + largoNombre + largoExtra;
+  const trozo = file.slice(inicio, inicio + entrada.comprimido);
+  if (entrada.metodo === 0) return trozo.stream();
+  if (entrada.metodo !== 8) throw new Error("El .xlsx usa una compresión no soportada.");
+  return trozo.stream().pipeThrough(new DecompressionStream("deflate-raw"));
+}
+
+async function textoDeEntrada(file, entrada) {
+  return await new Response(await flujoDeEntrada(file, entrada)).text();
+}
+
+// --- Lectura de la hoja por partes -----------------------------------------
+const RE_FILA = /<row[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g;
+const RE_CELDA = /<c\s+r="([A-Z]+)\d+"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+const RE_VALOR = /<v>([\s\S]*?)<\/v>/;
+const RE_TEXTO_EN_LINEA = /<t[^>]*>([\s\S]*?)<\/t>/g;
+
+function celdasDeFila(xml, cadenas) {
+  const celdas = [];
+  RE_CELDA.lastIndex = 0;
+  let m;
+  while ((m = RE_CELDA.exec(xml)) !== null) {
+    const col = letrasAIndice(m[1]);
+    const atributos = m[2] || "";
+    const cuerpo = m[3];
+    if (cuerpo === undefined) { celdas[col] = null; continue; }
+    const tipo = (atributos.match(/t="([^"]+)"/) || [])[1] || "n";
+    if (tipo === "s") {
+      const v = RE_VALOR.exec(cuerpo);
+      celdas[col] = v ? cadenas[Number(v[1])] : null;
+    } else if (tipo === "inlineStr") {
+      let texto = "";
+      RE_TEXTO_EN_LINEA.lastIndex = 0;
+      let t;
+      while ((t = RE_TEXTO_EN_LINEA.exec(cuerpo)) !== null) texto += desescaparXml(t[1]);
+      celdas[col] = texto;
+    } else {
+      const v = RE_VALOR.exec(cuerpo);
+      if (!v) { celdas[col] = null; continue; }
+      const bruto = desescaparXml(v[1]);
+      if (tipo === "str" || tipo === "e") celdas[col] = bruto;
+      else if (tipo === "b") celdas[col] = bruto === "1" ? "SI" : "NO";
+      else {
+        const n = Number(bruto);
+        celdas[col] = Number.isFinite(n) ? n : bruto;
+      }
+    }
+  }
+  return celdas;
+}
+
+// Los números de fecha de Excel son días desde el 30/12/1899
+function fechaDeSerie(n) {
+  if (!Number.isFinite(n) || n <= 0 || n > 80000) return null;
+  const ms = Math.round((n - 25569) * 86400000);
+  const d = new Date(ms);
+  return isNaN(d) ? null : d;
+}
+
+async function leerXlsxPorPartes(file, utiles, alAvanzar) {
+  const entradas = await leerDirectorioZip(file);
+
+  // Nombre de la primera hoja según el libro
+  const relaciones = entradas.get("xl/_rels/workbook.xml.rels");
+  const libro = entradas.get("xl/workbook.xml");
+  let nombreHoja = "Hoja 1";
+  let rutaHoja = null;
+  if (libro && relaciones) {
+    const xmlLibro = await textoDeEntrada(file, libro);
+    const xmlRel = await textoDeEntrada(file, relaciones);
+    const hojas = [...xmlLibro.matchAll(/<sheet[^>]*name="([^"]*)"[^>]*r:id="([^"]*)"/g)];
+    if (hojas.length) {
+      nombreHoja = desescaparXml(hojas[0][1]);
+      const rel = new RegExp('Id="' + hojas[0][2] + '"[^>]*Target="([^"]*)"').exec(xmlRel);
+      if (rel) rutaHoja = rel[1].replace(/^\//, "").replace(/^xl\//, "");
+    }
+  }
+  let entradaHoja = rutaHoja ? entradas.get("xl/" + rutaHoja) : null;
+  if (!entradaHoja) {
+    // Se toma la hoja más pesada, que es la que trae los datos
+    let mayor = 0;
+    entradas.forEach((v, k) => {
+      if (k.indexOf("xl/worksheets/") === 0 && k.slice(-4) === ".xml" && v.comprimido > mayor) {
+        mayor = v.comprimido;
+        entradaHoja = v;
+      }
+    });
+  }
+  if (!entradaHoja) throw new Error("No se encontró la hoja de datos dentro del archivo.");
+
+  // Cadenas compartidas
+  let cadenas = [];
+  const entradaCadenas = entradas.get("xl/sharedStrings.xml");
+  if (entradaCadenas) {
+    const xml = await textoDeEntrada(file, entradaCadenas);
+    const partes = xml.split("<si>");
+    cadenas = new Array(Math.max(0, partes.length - 1));
+    for (let i = 1; i < partes.length; i++) {
+      const si = partes[i];
+      let texto = "";
+      RE_TEXTO_EN_LINEA.lastIndex = 0;
+      let t;
+      while ((t = RE_TEXTO_EN_LINEA.exec(si)) !== null) texto += t[1];
+      cadenas[i - 1] = desescaparXml(texto);
+    }
+  }
+
+  // Recorrido de la hoja
+  const lector = (await flujoDeEntrada(file, entradaHoja)).pipeThrough(new TextDecoderStream()).getReader();
+  let resto = "";
+  let encabezado = null;
+  let indices = null;
+  const registros = [];
+  const comparable = (t) => String(t).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
+  const buscados = utiles && utiles.length ? new Map(utiles.map((c) => [comparable(c), c])) : null;
+
+  const procesa = (xmlFila) => {
+    const celdas = celdasDeFila(xmlFila, cadenas);
+    if (!encabezado) {
+      encabezado = celdas.map((c) => (c == null ? "" : String(c).trim()));
+      indices = [];
+      encabezado.forEach((col, j) => {
+        if (col === "") return;
+        if (buscados) {
+          const nombre = buscados.get(comparable(col));
+          if (nombre !== undefined && !indices.some((par) => par[0] === nombre)) indices.push([nombre, j, /^fecha/i.test(nombre)]);
+        } else {
+          indices.push([col, j, /^fecha/i.test(col)]);
+        }
+      });
+      return;
+    }
+    const obj = {};
+    for (let k = 0; k < indices.length; k++) {
+      let v = celdas[indices[k][1]];
+      if (v === undefined) v = null;
+      if (indices[k][2] && typeof v === "number") v = fechaDeSerie(v) || v;
+      obj[indices[k][0]] = v;
+    }
+    registros.push(obj);
+  };
+
+  while (true) {
+    const { done, value } = await lector.read();
+    if (value) resto += value;
+    let ultimo = 0;
+    RE_FILA.lastIndex = 0;
+    let m;
+    while ((m = RE_FILA.exec(resto)) !== null) {
+      procesa(m[1] || "");
+      ultimo = RE_FILA.lastIndex;
+    }
+    resto = ultimo ? resto.slice(ultimo) : resto;
+    if (alAvanzar && registros.length) alAvanzar(registros.length);
+    if (done) break;
+  }
+
+  return { nombreHoja, encabezado: encabezado || [], registros };
+}
+
+
+// ===========================================================================
+// COTEJO DE DEFUNCIONES · OCURRENCIA CONTRA EGRESOS Y URGENCIAS
+// ===========================================================================
+const MEMBRETE = [
+  "SECRETARIA DE SALUD DE TAMAULIPAS",
+  "DIRECCION GENERAL DE PLANEACION Y DESARROLLO DE SECTOR SALUD",
+  "DIRECCIÓN DE INFORMACIÓN Y TECNOLOGÍAS",
+  "DEPARTAMENTO DE INFORMACIÓN EN SALUD, ANÁLISIS E INTERPRETACIÓN",
+];
+const FUENTE = "FUENTE: BASE DE DEFUNCIONES SEED-CEDE PRELIMINAR, BASE DE EGRESOS HOSPITALARIOS Y BASE DE URGENCIAS";
+
+// Campos del certificado para el reporte, en el orden pedido
+const CAMPOS_REPORTE = [
+  "FOLIO", "NOMBRE", "PRIMERAPELLIDO", "SEGUNDOAPELLIDO", "SEXOD", "EDAD", "CLAVEEDADD",
+  "ENTIDADRESIDENCIAD", "MUNICIPIORESIDENCIAD", "SITIODEFUNCIOND", "CLUES", "NOMBREUNIDADMEDICA",
+  "ENTIDADDEFUNCIOND", "MUNICIPIODEFUNCIOND", "JURISDICCIONDEFUNCIOND", "CIECAUSABASICA",
+  "CIECAUSABASICAD", "ESTATUSD",
+];
+const CAMPOS_OCURRENCIA = CAMPOS_REPORTE.concat(["FECHADEFUNCION", "ENTIDADDEFUNCION", "ORIGEN", "CODIFICADO"]);
+
+// Cada base secundaria se describe igual. "columnas" lista el nombre que usa la
+// aplicación y los nombres alternos con que puede venir la columna en el archivo.
+const BASES = {
+  egresos: {
+    titulo: "Egresos",
+    campoMotivo: "motivo_egreso_desp",
+    columnas: {
+      clues: ["clues"],
+      nombre_unidad: ["nombre_unidad", "nombre_unidad_medica", "unidad"],
+      nombre_municipio: ["nombre_municipio"],
+      nombre_jurisdiccion: ["nombre_jurisdiccion"],
+      folio: ["folio"],
+      folio_cert_defuncion: ["folio_cert_defuncion", "folio_certificado_defuncion", "folio_certificado"],
+      nombre: ["nombre"], primer_apellido: ["primer_apellido"], segundo_apellido: ["segundo_apellido"],
+      fecha_ingreso: ["fecha_ingreso"],
+      fecha_salida: ["fecha_egreso"],
+      motivo_egreso_desp: ["motivo_egreso_desp"],
+      cie: ["cod_cie_afeccion_principal"],
+      cie_des: ["cod_cie_afeccion_principal_des", "afeccion_principal_des"],
+    },
+    reporte: [
+      ["clues", "EGR_CLUES"], ["nombre_unidad", "EGR_UNIDAD"], ["folio", "EGR_FOLIO"],
+      ["folio_cert_defuncion", "EGR_FOLIO_CERT_DEFUNCION"], ["fecha_ingreso", "EGR_FECHA_INGRESO"],
+      ["fecha_salida", "EGR_FECHA_EGRESO"], ["motivo_egreso_desp", "EGR_MOTIVO_EGRESO"],
+      ["cie", "EGR_CIE_AFECCION_PRINCIPAL"], ["cie_des", "EGR_AFECCION_PRINCIPAL"],
+    ],
+    etiquetaFecha: "egreso",
+  },
+  urgencias: {
+    titulo: "Urgencias",
+    campoMotivo: "alta_por_des",
+    columnas: {
+      clues: ["clues"],
+      nombre_unidad: ["nombre_unidad", "nombre_unidad_medica", "unidad"],
+      folio: ["folio"],
+      folio_cert_defuncion: ["folio_cert_defuncion", "folio_certificado_defuncion", "folio_certificado", "folio_cert"],
+      nombre: ["nombre"], primer_apellido: ["primer_apellido"], segundo_apellido: ["segundo_apellido"],
+      fecha_ingreso: ["fecha_ingreso", "fecha_llegada", "fecha_atencion"],
+      fecha_salida: ["fecha_alta", "fecha_egreso"],
+      alta_por_des: ["alta_por_des"],
+      cie: ["cod_cie_afeccion_principal", "cod_cie_diagnostico_principal", "afeccion_principal"],
+      cie_des: ["cod_cie_afeccion_principal_des", "afeccion_principal_des", "diagnostico_principal_des"],
+    },
+    reporte: [
+      ["clues", "URG_CLUES"], ["nombre_unidad", "URG_UNIDAD"], ["folio", "URG_FOLIO"],
+      ["folio_cert_defuncion", "URG_FOLIO_CERT_DEFUNCION"], ["fecha_ingreso", "URG_FECHA_INGRESO"],
+      ["fecha_salida", "URG_FECHA_ALTA"], ["alta_por_des", "URG_ALTA_POR"],
+      ["cie", "URG_CIE_AFECCION_PRINCIPAL"], ["cie_des", "URG_AFECCION_PRINCIPAL"],
+    ],
+    etiquetaFecha: "alta",
+  },
+};
+
+function normalizaTexto(v) {
+  if (v == null) return "";
+  return String(v).trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+function nombreCompleto(a, b, c) {
+  return normalizaTexto([a, b, c].map((x) => (x == null ? "" : String(x))).join(" ")).replace(/\s+/g, " ").trim();
+}
+function textoCelda(v) {
+  if (v == null) return "";
+  if (v instanceof Date) return v.toLocaleDateString("es-MX");
+  return String(v);
+}
+function cluesDe(r) {
+  const c = r["CLUES"] == null ? "" : String(r["CLUES"]).trim().toUpperCase();
+  return c && c !== "NULL" && c !== "0" && c !== "NA" && c !== "N/A" ? c : "";
+}
+// Solo cuentan los registros cuyo campo de motivo es exactamente DEFUNCIÓN (sin importar acentos ni mayúsculas)
+function esDefuncion(r, cual) { return normalizaTexto(r[BASES[cual].campoMotivo]) === "DEFUNCION"; }
+function nf(n) { return n.toLocaleString("es-MX"); }
+
+const estado = {
+  ocurrencia: null, ocurrenciaNombre: null,
+  egresos: null, egresosNombre: null,
+  urgencias: null, urgenciasNombre: null,
+  cotejo: null, pestana: "TODOS", texto: "",
+};
+
+// --- Filtros sobre OCURRENCIA -----------------------------------------------
+// Sitio de defunción que se coteja. Se compara sin acentos, mayúsculas, guiones ni espacios dobles,
+// así que «Servicios de Salud IMSS-Bienestar» también cuenta.
+const SITIO_BUSCADO = "SERVICIOS DE SALUD IMSS BIENESTAR";
+function claveSitio(v) { return normalizaTexto(v).replace(/[^A-Z0-9]+/g, " ").trim(); }
+function esSitioBuscado(r) { return claveSitio(r["SITIODEFUNCIOND"]) === SITIO_BUSCADO; }
+
+function ocurrenciaDelSitio() {
+  return estado.ocurrencia ? estado.ocurrencia.filter(esSitioBuscado) : [];
+}
+
+// --- Mes de defunción -------------------------------------------------------
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// FECHADEFUNCION puede venir como fecha de Excel, como número de serie o como texto
+function fechaDefuncion(r) {
+  const v = r["FECHADEFUNCION"];
+  if (v == null || v === "") return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (typeof v === "number") return fechaDeSerie(v);
+  const t = String(v).trim();
+  let m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(t);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(t);
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  const d = new Date(t);
+  return isNaN(d) ? null : d;
+}
+function claveMes(r) {
+  const d = fechaDefuncion(r);
+  return d ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") : "SIN";
+}
+function nombreMes(clave) {
+  if (clave === "SIN") return "Sin fecha de defunción";
+  const [a, m] = clave.split("-");
+  return MESES[Number(m) - 1].charAt(0).toUpperCase() + MESES[Number(m) - 1].slice(1) + " de " + a;
+}
+
+// Meses marcados. Si no hay ninguno marcado se toman todos.
+function mesesMarcados() {
+  return [...document.querySelectorAll("#filtroMes input:checked")].map((i) => i.value);
+}
+function textoPeriodo() {
+  const marcados = mesesMarcados();
+  const total = document.querySelectorAll("#filtroMes input").length;
+  if (!marcados.length || marcados.length === total) return "Todos los meses";
+  return marcados.map(nombreMes).join(", ");
+}
+
+function ocurrenciaFiltrada() {
+  const clues = document.getElementById("filtroClues").value;
+  const marcados = mesesMarcados();
+  const meses = marcados.length ? new Set(marcados) : null;
+  return ocurrenciaDelSitio().filter((r) =>
+    (!clues || cluesDe(r) === clues) && (!meses || meses.has(claveMes(r))));
+}
+
+function llenarFiltros() {
+  const clues = new Map();
+  const meses = new Map();
+  ocurrenciaDelSitio().forEach((r) => {
+    const c = cluesDe(r);
+    if (c && !clues.has(c)) clues.set(c, textoCelda(r["NOMBREUNIDADMEDICA"]));
+    const m = claveMes(r);
+    meses.set(m, (meses.get(m) || 0) + 1);
+  });
+  const orden = [...meses.entries()].sort((a, b) => (a[0] === "SIN" ? 1 : b[0] === "SIN" ? -1 : a[0].localeCompare(b[0])));
+  document.getElementById("filtroMes").innerHTML = orden.length
+    ? orden.map(([m, n]) => `<label class="mes"><input type="checkbox" value="${m}" />${escapar(nombreMes(m))} <span class="cuenta">${nf(n)}</span></label>`).join("")
+    : '<span class="estado">La base no trae fechas de defunción.</span>';
+  document.getElementById("filtroClues").innerHTML = '<option value="">Todas</option>' +
+    [...clues.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([c, u]) => `<option value="${escapar(c)}">${escapar(c)}${u ? " · " + escapar(u) : ""}</option>`).join("");
+}
+
+function actualizarEstadoFiltro() {
+  const caja = document.getElementById("estadoFiltro");
+  if (!estado.ocurrencia) { caja.textContent = "Carga la base de OCURRENCIA para ver cuántos registros entran al cotejo."; return; }
+  const delSitio = ocurrenciaDelSitio().length;
+  if (!delSitio) {
+    const sitios = new Map();
+    estado.ocurrencia.forEach((r) => { const t = textoCelda(r["SITIODEFUNCIOND"]).trim(); if (t) sitios.set(t, (sitios.get(t) || 0) + 1); });
+    const lista = [...sitios.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t, n]) => `${t} (${nf(n)})`).join("; ");
+    caja.innerHTML = `<span style="color:var(--red);font-weight:700">Ninguna defunción tiene sitio «Servicios de Salud IMSS Bienestar».</span>` +
+      (lista ? ` Valores encontrados en SITIODEFUNCIOND: ${escapar(lista)}.` : " El archivo no trae la columna SITIODEFUNCIOND.");
+    return;
+  }
+  const periodo = textoPeriodo();
+  caja.textContent = `Entran al cotejo ${nf(ocurrenciaFiltrada().length)} de ${nf(estado.ocurrencia.length)} defunciones ` +
+    `(${nf(delSitio)} con sitio Servicios de Salud IMSS Bienestar` +
+    (periodo === "Todos los meses" ? "" : `, ${periodo.toLowerCase()}`) + ").";
+}
+
+function actualizarBoton() {
+  const listo = !!(estado.ocurrencia && (estado.egresos || estado.urgencias) && ocurrenciaDelSitio().length);
+  document.getElementById("cotejar").disabled = !listo;
+  if (!estado.cotejo) {
+    document.getElementById("estadoGeneral").textContent = listo
+      ? (estado.egresos && estado.urgencias ? "" : `Se cotejará solo contra ${estado.egresos ? "Egresos" : "Urgencias"}; puedes cargar la otra base si la necesitas.`)
+      : "Carga OCURRENCIA y al menos una de las otras dos bases.";
+  }
+}
+
+// --- Carga de archivos ------------------------------------------------------
+const IDS = {
+  ocurrencia: ["zonaOcurrencia", "archivoOcurrencia", "estadoOcurrencia"],
+  egresos: ["zonaEgresos", "archivoEgresos", "estadoEgresos"],
+  urgencias: ["zonaUrgencias", "archivoUrgencias", "estadoUrgencias"],
+};
+
+function columnasALeer(cual) {
+  if (cual === "ocurrencia") return CAMPOS_OCURRENCIA;
+  const lista = [];
+  Object.values(BASES[cual].columnas).forEach((alias) => alias.forEach((a) => { if (lista.indexOf(a) < 0) lista.push(a); }));
+  return lista;
+}
+
+// Pasa los nombres alternos al nombre que usa la aplicación
+function canonizar(registros, cual) {
+  const columnas = BASES[cual].columnas;
+  return registros.map((r) => {
+    const o = {};
+    for (const canon in columnas) {
+      let v = null;
+      for (const alias of columnas[canon]) {
+        if (r[alias] != null && r[alias] !== "") { v = r[alias]; break; }
+      }
+      o[canon] = v;
+    }
+    return o;
+  });
+}
+
+async function leerRegistros(file, utiles) {
+  if (file.size >= XLSX_STREAM_DESDE && hayLecturaPorPartes()) {
+    const salida = await leerXlsxPorPartes(file, utiles, null);
+    return { registros: salida.registros, encontradas: salida.registros.length ? Object.keys(salida.registros[0]) : [] };
+  }
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
+  let hoja = wb.SheetNames[0];
+  let filas = -1;
+  wb.SheetNames.forEach((n) => {
+    const ref = wb.Sheets[n] && wb.Sheets[n]["!ref"];
+    const r = ref ? XLSX.utils.decode_range(ref).e.r : -1;
+    if (r > filas) { filas = r; hoja = n; }
+  });
+  const matriz = XLSX.utils.sheet_to_json(wb.Sheets[hoja], { header: 1, defval: null, blankrows: false });
+  const encabezado = (matriz[0] || []).map((c) => (c == null ? "" : String(c).trim()));
+  const comparable = (t) => String(t).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
+  const buscados = new Map(utiles.map((c) => [comparable(c), c]));
+  const indices = [];
+  encabezado.forEach((col, j) => {
+    const nombre = buscados.get(comparable(col));
+    if (nombre !== undefined && !indices.some((p) => p[0] === nombre)) indices.push([nombre, j]);
+  });
+  const registros = [];
+  for (let i = 1; i < matriz.length; i++) {
+    const fila = matriz[i];
+    if (!fila) continue;
+    const obj = {};
+    indices.forEach(([nombre, j]) => {
+      let v = fila[j] === undefined ? null : fila[j];
+      obj[nombre] = v;
+    });
+    registros.push(obj);
+  }
+  return { registros, encontradas: indices.map((p) => p[0]) };
+}
+
+async function cargarArchivo(file, cual) {
+  const [idZona, , idEstado] = IDS[cual];
+  const cajaEstado = document.getElementById(idEstado);
+  const zona = document.getElementById(idZona);
+  cajaEstado.textContent = "Leyendo " + file.name + "…";
+  zona.classList.remove("lista");
+  estado[cual] = null;
+  try {
+    const { registros: brutos, encontradas } = await leerRegistros(file, columnasALeer(cual));
+    if (!brutos.length) throw new Error("el archivo no trajo registros");
+
+    if (cual === "ocurrencia") {
+      if (encontradas.indexOf("FOLIO") < 0) throw new Error("no se encontró la columna FOLIO; ¿es la base de OCURRENCIA?");
+      estado.ocurrencia = brutos;
+      estado.ocurrenciaNombre = file.name;
+      const delSitio = brutos.filter(esSitioBuscado).length;
+      cajaEstado.textContent = `${file.name} · ${nf(brutos.length)} defunciones, ${nf(delSitio)} en Servicios de Salud IMSS Bienestar`;
+      llenarFiltros();
+      actualizarEstadoFiltro();
+    } else {
+      const base = BASES[cual];
+      if (encontradas.indexOf(base.campoMotivo) < 0) {
+        throw new Error(`no se encontró la columna ${base.campoMotivo}; ¿es la base de ${base.titulo}?`);
+      }
+      const registros = canonizar(brutos, cual);
+      estado[cual] = registros;
+      estado[cual + "Nombre"] = file.name;
+      const defunciones = registros.filter((r) => esDefuncion(r, cual)).length;
+      const sinFolioCert = !Object.values(base.columnas.folio_cert_defuncion).some((a) => encontradas.indexOf(a) >= 0);
+      cajaEstado.textContent = `${file.name} · ${nf(registros.length)} registros, ${nf(defunciones)} con ${base.campoMotivo} = DEFUNCIÓN` +
+        (sinFolioCert ? " · sin columna de folio de certificado: se buscará solo por nombre" : "");
+    }
+    zona.classList.add("lista");
+  } catch (err) {
+    cajaEstado.textContent = "No se pudo leer: " + (err.message || "archivo no válido");
+  }
+  actualizarBoton();
+}
+
+// --- Cotejo -----------------------------------------------------------------
+function indexar(lista) {
+  const porFolio = new Map();
+  const porNombre = new Map();
+  lista.forEach((e) => {
+    const folio = normalizaTexto(e["folio_cert_defuncion"]).replace(/\s+/g, "");
+    if (folio && !porFolio.has(folio)) porFolio.set(folio, e);
+    const nombre = nombreCompleto(e["nombre"], e["primer_apellido"], e["segundo_apellido"]);
+    if (nombre) {
+      if (!porNombre.has(nombre)) porNombre.set(nombre, []);
+      porNombre.get(nombre).push(e);
+    }
+  });
+  return { porFolio, porNombre };
+}
+
+function buscarEn(indice, folio, nombre, cluesO) {
+  let r = null;
+  if (!indice) return { via: "SIN", registro: null, ambiguo: false, cluesDistinta: false };
+  if (folio && indice.porFolio.has(folio)) r = { via: "FOLIO", registro: indice.porFolio.get(folio), ambiguo: false };
+  else if (nombre && indice.porNombre.has(nombre)) {
+    const l = indice.porNombre.get(nombre);
+    r = { via: "NOMBRE", registro: l[0], ambiguo: l.length > 1 };
+  }
+  if (!r) return { via: "SIN", registro: null, ambiguo: false, cluesDistinta: false };
+  const cluesR = r.registro["clues"] == null ? "" : String(r.registro["clues"]).trim().toUpperCase();
+  r.cluesDistinta = !!(cluesO && cluesR && cluesO !== cluesR);
+  return r;
+}
+
+function cotejar() {
+  const hayEgr = !!estado.egresos, hayUrg = !!estado.urgencias;
+  const defEgr = hayEgr ? estado.egresos.filter((r) => esDefuncion(r, "egresos")) : [];
+  const defUrg = hayUrg ? estado.urgencias.filter((r) => esDefuncion(r, "urgencias")) : [];
+  const idxEgr = hayEgr ? indexar(defEgr) : null;
+  const idxUrg = hayUrg ? indexar(defUrg) : null;
+
+  const filas = ocurrenciaFiltrada().map((o) => {
+    const folio = normalizaTexto(o["FOLIO"]).replace(/\s+/g, "");
+    const nombre = nombreCompleto(o["NOMBRE"], o["PRIMERAPELLIDO"], o["SEGUNDOAPELLIDO"]);
+    const cluesO = cluesDe(o);
+    const egr = buscarEn(idxEgr, folio, nombre, cluesO);
+    const urg = buscarEn(idxUrg, folio, nombre, cluesO);
+    const enE = egr.via !== "SIN", enU = urg.via !== "SIN";
+    return {
+      clues: cluesO || "SIN CLUES",
+      unidad: textoCelda(o["NOMBREUNIDADMEDICA"]),
+      folio: textoCelda(o["FOLIO"]),
+      nombre, ocurrencia: o, egr, urg,
+      resultado: enE && enU ? "AMBAS" : enE ? "EGRESOS" : enU ? "URGENCIAS" : "SIN",
+    };
+  });
+
+  const vacio = (clues, unidad) => ({ clues, unidad, total: 0, eFolio: 0, eNombre: 0, uFolio: 0, uNombre: 0, ambas: 0, sin: 0 });
+  const suma = (c, f) => {
+    c.total++;
+    if (f.egr.via === "FOLIO") c.eFolio++; else if (f.egr.via === "NOMBRE") c.eNombre++;
+    if (f.urg.via === "FOLIO") c.uFolio++; else if (f.urg.via === "NOMBRE") c.uNombre++;
+    if (f.resultado === "AMBAS") c.ambas++;
+    if (f.resultado === "SIN") c.sin++;
+  };
+  const porClues = new Map();
+  const total = vacio("TOTAL", "");
+  filas.forEach((f) => {
+    if (!porClues.has(f.clues)) porClues.set(f.clues, vacio(f.clues, f.unidad));
+    const c = porClues.get(f.clues);
+    if (!c.unidad && f.unidad) c.unidad = f.unidad;
+    suma(c, f); suma(total, f);
+  });
+
+  estado.cotejo = {
+    filas, hayEgr, hayUrg, total,
+    clues: [...porClues.values()].sort((a, b) => b.total - a.total),
+    defEgr: defEgr.length, defUrg: defUrg.length,
+    soloEgr: filas.filter((f) => f.resultado === "EGRESOS").length,
+    soloUrg: filas.filter((f) => f.resultado === "URGENCIAS").length,
+    ambiguos: filas.filter((f) => f.egr.ambiguo || f.urg.ambiguo).length,
+    cluesDistinta: filas.filter((f) => f.egr.cluesDistinta || f.urg.cluesDistinta).length,
+    sinFolio: filas.filter((f) => !f.folio).length,
+    periodo: textoPeriodo(),
+  };
+  estado.pestana = "TODOS";
+  pintar();
+}
+
+// --- Pantalla ---------------------------------------------------------------
+function localizadas(c) { return c.total - c.sin; }
+function pctDe(c) { return c.total > 0 ? (localizadas(c) / c.total) * 100 : 0; }
+
+function pintar() {
+  const c = estado.cotejo;
+  const t = c.total;
+  document.getElementById("resultado").classList.remove("oculto");
+
+  const kpis = [
+    { et: "Defunciones IMSS Bienestar", val: t.total, destacado: true, pie: c.periodo },
+    { et: "Localizadas", val: localizadas(t), bueno: true, pie: pctDe(t).toFixed(1) + "% en Egresos o Urgencias" },
+  ];
+  if (c.hayEgr) kpis.push({ et: "En Egresos", val: t.eFolio + t.eNombre, pie: `${nf(t.eFolio)} por folio · ${nf(t.eNombre)} por nombre` });
+  if (c.hayUrg) kpis.push({ et: "En Urgencias", val: t.uFolio + t.uNombre, pie: `${nf(t.uFolio)} por folio · ${nf(t.uNombre)} por nombre` });
+  if (c.hayEgr && c.hayUrg) kpis.push({ et: "En ambas bases", val: t.ambas, azul: t.ambas > 0 });
+  kpis.push({ et: "No localizadas", val: t.sin, destacado: t.sin > 0 });
+  if (c.hayEgr) kpis.push({ et: "Egresos por defunción", val: c.defEgr, pie: "motivo_egreso_desp = DEFUNCIÓN" });
+  if (c.hayUrg) kpis.push({ et: "Urgencias por defunción", val: c.defUrg, pie: "alta_por_des = DEFUNCIÓN" });
+
+  document.getElementById("kpis").innerHTML = kpis.map((k) => `
+    <div class="kpi ${k.destacado ? "destacado" : k.bueno ? "bueno" : k.azul ? "azul" : ""}">
+      <div class="et">${k.et}</div>
+      <div class="val">${nf(k.val)}</div>
+      ${k.pie ? `<div class="pie">${escapar(k.pie)}</div>` : ""}
+    </div>`).join("");
+
+  const avisos = [];
+  if (!c.hayEgr || !c.hayUrg) {
+    avisos.push(`<div class="aviso nota">Este cotejo se hizo solo contra <strong>${c.hayEgr ? "Egresos" : "Urgencias"}</strong>. Carga la otra base y vuelve a cotejar para buscar en las dos.</div>`);
+  }
+  if (c.cluesDistinta > 0) {
+    avisos.push(`<div class="aviso nota">${nf(c.cluesDistinta)} coincidencias tienen una CLUES distinta en el certificado y en el registro de Egresos o Urgencias. En el detalle aparecen en rojo.</div>`);
+  }
+  if (c.sinFolio > 0) {
+    avisos.push(`<div class="aviso nota">${nf(c.sinFolio)} defunciones no traen folio, así que solo pudieron buscarse por nombre.</div>`);
+  }
+  if (c.ambiguos > 0) {
+    avisos.push(`<div class="aviso alerta"><strong>${nf(c.ambiguos)} coincidencias por nombre son ambiguas:</strong> el mismo nombre completo aparece más de una vez en Egresos o en Urgencias. Se tomó el primero; conviene revisarlas una por una, están marcadas en el detalle.</div>`);
+  }
+  document.getElementById("avisos").innerHTML = avisos.join("");
+
+  const guion = (hay, n, estilo) => hay ? `<td class="num" ${estilo || ""}>${nf(n)}</td>` : `<td class="num" style="color:var(--inkSoft)">—</td>`;
+  const filaClues = (d, esTotal) => {
+    const p = pctDe(d);
+    const b = (x) => (esTotal ? `<strong>${x}</strong>` : x);
+    return `<tr ${esTotal ? 'style="background:var(--goldSoft)"' : ""}>
+      ${esTotal ? '<td colspan="2"><strong>Total</strong></td>' :
+        `<td style="font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700">${escapar(d.clues)}</td><td>${escapar(d.unidad || "—")}</td>`}
+      <td class="num"><strong>${nf(d.total)}</strong></td>
+      ${guion(c.hayEgr, d.eFolio)}${guion(c.hayEgr, d.eNombre)}${guion(c.hayEgr, d.eFolio + d.eNombre, 'style="font-weight:700"')}
+      ${guion(c.hayUrg, d.uFolio)}${guion(c.hayUrg, d.uNombre)}${guion(c.hayUrg, d.uFolio + d.uNombre, 'style="font-weight:700"')}
+      ${guion(c.hayEgr && c.hayUrg, d.ambas)}
+      <td class="num" style="color:var(--verde);font-weight:700">${b(nf(localizadas(d)))}</td>
+      <td class="num" style="color:${d.sin ? "var(--red)" : "var(--inkSoft)"};font-weight:700">${b(nf(d.sin))}</td>
+      <td class="num">${b(p.toFixed(1) + "%")}</td>
+      <td>${esTotal ? "" : `<div class="barrita"><i style="width:${p}%"></i></div>`}</td>
+    </tr>`;
+  };
+  document.getElementById("cuerpoClues").innerHTML = c.clues.map((d) => filaClues(d, false)).join("") + filaClues(t, true);
+
+  const pest = [
+    { id: "TODOS", texto: `Todos (${nf(t.total)})` },
+    { id: "LOCALIZADAS", texto: `Localizadas (${nf(localizadas(t))})` },
+  ];
+  if (c.hayEgr && c.hayUrg) {
+    pest.push({ id: "EGRESOS", texto: `Solo en Egresos (${nf(c.soloEgr)})` });
+    pest.push({ id: "URGENCIAS", texto: `Solo en Urgencias (${nf(c.soloUrg)})` });
+    pest.push({ id: "AMBAS", texto: `En ambas (${nf(t.ambas)})` });
+  }
+  pest.push({ id: "SIN", texto: `No localizados (${nf(t.sin)})` });
+  document.getElementById("pestanas").innerHTML = pest
+    .map((p) => `<button class="pestana ${estado.pestana === p.id ? "activa" : ""}" data-p="${p.id}">${p.texto}</button>`).join("");
+  document.querySelectorAll(".pestana").forEach((b) => {
+    b.onclick = () => { estado.pestana = b.getAttribute("data-p"); pintar(); };
+  });
+
+  pintarDetalle();
+}
+
+function filasVisibles() {
+  const c = estado.cotejo;
+  let lista = c.filas;
+  if (estado.pestana === "LOCALIZADAS") lista = lista.filter((f) => f.resultado !== "SIN");
+  else if (estado.pestana !== "TODOS") lista = lista.filter((f) => f.resultado === estado.pestana);
+  const t = normalizaTexto(estado.texto);
+  if (t) {
+    const enRegistro = (r) => r && (normalizaTexto(r["folio"]).indexOf(t) >= 0 || normalizaTexto(r["clues"]).indexOf(t) >= 0);
+    lista = lista.filter((f) =>
+      f.nombre.indexOf(t) >= 0 || normalizaTexto(f.folio).indexOf(t) >= 0 || f.clues.indexOf(t) >= 0 ||
+      enRegistro(f.egr.registro) || enRegistro(f.urg.registro));
+  }
+  return lista;
+}
+
+function textoVia(m) {
+  if (m.via === "FOLIO") return "POR FOLIO";
+  if (m.via === "NOMBRE") return m.ambiguo ? "POR NOMBRE (AMBIGUO)" : "POR NOMBRE";
+  return "NO LOCALIZADO";
+}
+function textoResultado(f) {
+  return { AMBAS: "EGRESOS Y URGENCIAS", EGRESOS: "SOLO EGRESOS", URGENCIAS: "SOLO URGENCIAS", SIN: "NO LOCALIZADO" }[f.resultado];
+}
+
+function celdaBase(m, hay, cual) {
+  if (!hay) return '<span style="color:var(--inkSoft)">No cargada</span>';
+  if (m.via === "SIN") return '<span class="etiqueta et-sin">No localizado</span>';
+  const r = m.registro;
+  const etiqueta = m.via === "FOLIO"
+    ? '<span class="etiqueta et-folio">Por folio</span>'
+    : `<span class="etiqueta et-nombre">Por nombre${m.ambiguo ? " · ambiguo" : ""}</span>`;
+  const clues = textoCelda(r["clues"]);
+  const cluesHtml = m.cluesDistinta ? `<span style="color:var(--red);font-weight:700" title="Distinta a la del certificado">${escapar(clues)}</span>` : escapar(clues);
+  const fecha = textoCelda(r["fecha_salida"]);
+  const partes = [cluesHtml, r["folio"] != null ? "folio " + escapar(textoCelda(r["folio"])) : "", fecha ? BASES[cual].etiquetaFecha + " " + escapar(fecha) : ""].filter(Boolean);
+  return etiqueta + `<span class="dato">${partes.join(" · ")}</span>`;
+}
+
+function pintarDetalle() {
+  const c = estado.cotejo;
+  const columnas = ["CLUES", "Folio del certificado", "Nombre en OCURRENCIA", "Causa básica", "En Egresos", "En Urgencias"];
+  document.getElementById("encabezadoDetalle").innerHTML = columnas.map((h) => `<th>${h}</th>`).join("");
+  const lista = filasVisibles();
+  const muestra = lista.slice(0, 400);
+  const mono = 'style="font-family:ui-monospace,Menlo,Consolas,monospace"';
+  document.getElementById("cuerpoDetalle").innerHTML = muestra.map((f) => {
+    const o = f.ocurrencia;
+    return `<tr>
+      <td ${mono}>${escapar(f.clues)}</td>
+      <td ${mono}>${escapar(f.folio || "—")}</td>
+      <td>${escapar(f.nombre || "—")}</td>
+      <td>${escapar((textoCelda(o["CIECAUSABASICA"]) + " " + textoCelda(o["CIECAUSABASICAD"])).trim() || "—")}</td>
+      <td>${celdaBase(f.egr, c.hayEgr, "egresos")}</td>
+      <td>${celdaBase(f.urg, c.hayUrg, "urgencias")}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("pieDetalle").textContent =
+    lista.length > muestra.length
+      ? `Se muestran ${muestra.length} de ${nf(lista.length)} registros. Exporta a Excel para verlos todos.`
+      : `${nf(lista.length)} registros.`;
+}
+
+function escapar(t) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// --- Exportación a Excel ----------------------------------------------------
+const F = "Calibri";
+function hojaDesdeMatriz(aoa, titulo, anchos, filaEncabezado) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const rango = XLSX.utils.decode_range(ws["!ref"]);
+  for (let R = rango.s.r; R <= rango.e.r; R++) {
+    for (let C = rango.s.c; C <= rango.e.c; C++) {
+      const dir = XLSX.utils.encode_cell({ r: R, c: C });
+      const celda = ws[dir];
+      if (!celda) continue;
+      let fuente = { name: F, sz: 11 };
+      if (R < 4) fuente = { name: F, sz: 12, bold: R === 0 };
+      else if (R === 5) fuente = { name: F, sz: 12, bold: true };
+      else if (R === 6) fuente = { name: F, sz: 6 };
+      else if (R === filaEncabezado) fuente = { name: F, sz: 11, bold: true };
+      celda.s = { font: fuente, alignment: { vertical: "center", wrapText: false } };
+      if (celda.v instanceof Date) celda.z = "dd/mm/yyyy";
+    }
+  }
+  ws["!cols"] = anchos.map((w) => ({ wch: w }));
+  ws["!freeze"] = { xSplit: 0, ySplit: filaEncabezado + 1 };
+  ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: filaEncabezado, c: 0 }, e: { r: rango.e.r, c: rango.e.c } }) };
+  return ws;
+}
+
+function encabezadoLibro(titulo) {
+  const periodo = estado.cotejo ? estado.cotejo.periodo : "";
+  return [[MEMBRETE[0]], [MEMBRETE[1]], [MEMBRETE[2]], [MEMBRETE[3]], [],
+          [titulo + (periodo ? " · " + periodo : "")], [FUENTE], []];
+}
+
+function hojaResumen() {
+  const c = estado.cotejo;
+  const aoa = encabezadoLibro("Resumen por CLUES · defunciones con sitio Servicios de Salud IMSS Bienestar contra Egresos y Urgencias");
+  const cab = ["CLUES", "UNIDAD MEDICA", "DEFUNCIONES IMSS BIENESTAR"];
+  const anchos = [16, 42, 14];
+  if (c.hayEgr) { cab.push("EGRESOS POR FOLIO", "EGRESOS POR NOMBRE", "TOTAL EN EGRESOS"); anchos.push(14, 14, 14); }
+  if (c.hayUrg) { cab.push("URGENCIAS POR FOLIO", "URGENCIAS POR NOMBRE", "TOTAL EN URGENCIAS"); anchos.push(14, 14, 14); }
+  if (c.hayEgr && c.hayUrg) { cab.push("EN AMBAS"); anchos.push(12); }
+  cab.push("TOTAL LOCALIZADAS", "NO LOCALIZADAS", "% LOCALIZADO"); anchos.push(14, 14, 12);
+  aoa.push(cab);
+  const fila = (d, etiqueta) => {
+    const f = [etiqueta || d.clues, etiqueta ? "" : d.unidad || "", d.total];
+    if (c.hayEgr) f.push(d.eFolio, d.eNombre, d.eFolio + d.eNombre);
+    if (c.hayUrg) f.push(d.uFolio, d.uNombre, d.uFolio + d.uNombre);
+    if (c.hayEgr && c.hayUrg) f.push(d.ambas);
+    f.push(localizadas(d), d.sin, Number(pctDe(d).toFixed(1)));
+    return f;
+  };
+  c.clues.forEach((d) => aoa.push(fila(d)));
+  aoa.push(fila(c.total, "TOTAL"));
+  return hojaDesdeMatriz(aoa, "Resumen", anchos, 8);
+}
+
+function hojaRegistros(filas, titulo) {
+  const c = estado.cotejo;
+  const aoa = encabezadoLibro(titulo);
+  const bases = [];
+  if (c.hayEgr) bases.push(["egresos", "egr", "COINCIDENCIA_EGRESOS"]);
+  if (c.hayUrg) bases.push(["urgencias", "urg", "COINCIDENCIA_URGENCIAS"]);
+
+  const cab = ["RESULTADO"].concat(bases.map((b) => b[2]), CAMPOS_REPORTE, ["FECHADEFUNCION"]);
+  bases.forEach(([cual]) => { BASES[cual].reporte.forEach((p) => cab.push(p[1])); });
+  cab.push("CLUES_DISTINTA");
+  aoa.push(cab);
+
+  filas.forEach((f) => {
+    const o = f.ocurrencia;
+    const r = [textoResultado(f)];
+    bases.forEach(([, clave]) => r.push(textoVia(f[clave])));
+    CAMPOS_REPORTE.forEach((campo) => r.push(o[campo] == null ? "" : o[campo]));
+    r.push(o["FECHADEFUNCION"] == null ? "" : o["FECHADEFUNCION"]);
+    bases.forEach(([cual, clave]) => {
+      const reg = f[clave].registro;
+      BASES[cual].reporte.forEach(([campo]) => r.push(reg && reg[campo] != null ? reg[campo] : ""));
+    });
+    const distintas = bases.filter(([, clave]) => f[clave].cluesDistinta).map(([cual]) => BASES[cual].titulo.toUpperCase());
+    r.push(distintas.join(", "));
+    aoa.push(r);
+  });
+
+  const anchos = [22].concat(
+    bases.map(() => 22),
+    CAMPOS_REPORTE.map((x) => x.indexOf("NOMBRE") >= 0 || x.indexOf("MUNICIPIO") >= 0 || x.indexOf("ENTIDAD") >= 0 || x === "CIECAUSABASICAD" ? 30 : 16),
+    [14]);
+  bases.forEach(([cual]) => BASES[cual].reporte.forEach((p) => anchos.push(/UNIDAD|AFECCION_PRINCIPAL$/.test(p[1]) ? 34 : 18)));
+  anchos.push(18);
+  return hojaDesdeMatriz(aoa, titulo, anchos, 8);
+}
+
+function descargar(hojas, nombreArchivo) {
+  const libro = XLSX.utils.book_new();
+  hojas.forEach(([nombre, hoja]) => XLSX.utils.book_append_sheet(libro, hoja, nombre));
+  XLSX.writeFile(libro, nombreArchivo);
+}
+
+// --- Eventos ----------------------------------------------------------------
+function conectarZona(cual) {
+  const [idZona, idInput] = IDS[cual];
+  const zona = document.getElementById(idZona);
+  const input = document.getElementById(idInput);
+  zona.addEventListener("click", () => input.click());
+  zona.addEventListener("dragover", (e) => { e.preventDefault(); zona.classList.add("encima"); });
+  zona.addEventListener("dragleave", () => zona.classList.remove("encima"));
+  zona.addEventListener("drop", (e) => {
+    e.preventDefault(); zona.classList.remove("encima");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) cargarArchivo(e.dataTransfer.files[0], cual);
+  });
+  input.addEventListener("change", (e) => { if (e.target.files[0]) cargarArchivo(e.target.files[0], cual); });
+}
+["ocurrencia", "egresos", "urgencias"].forEach(conectarZona);
+
+document.getElementById("filtroClues").addEventListener("change", actualizarEstadoFiltro);
+document.getElementById("filtroMes").addEventListener("change", actualizarEstadoFiltro);
+const marcarMeses = (v) => {
+  document.querySelectorAll("#filtroMes input").forEach((i) => { i.checked = v; });
+  actualizarEstadoFiltro();
+};
+document.getElementById("mesesTodos").addEventListener("click", () => marcarMeses(true));
+document.getElementById("mesesNinguno").addEventListener("click", () => marcarMeses(false));
+
+document.getElementById("cotejar").addEventListener("click", () => {
+  document.getElementById("estadoGeneral").textContent = "Cotejando…";
+  setTimeout(() => {
+    try {
+      cotejar();
+      document.getElementById("estadoGeneral").textContent = "";
+    } catch (err) {
+      document.getElementById("estadoGeneral").textContent = "Error al cotejar: " + err.message;
+    }
+  }, 30);
+});
+
+document.getElementById("limpiar").addEventListener("click", () => {
+  ["ocurrencia", "egresos", "urgencias"].forEach((cual) => {
+    estado[cual] = null;
+    const [idZona, idInput, idEstado] = IDS[cual];
+    document.getElementById(idEstado).textContent = "Arrastra el archivo o haz clic para elegirlo";
+    document.getElementById(idZona).classList.remove("lista");
+    document.getElementById(idInput).value = "";
+  });
+  estado.cotejo = null;
+  document.getElementById("resultado").classList.add("oculto");
+  document.getElementById("filtroClues").innerHTML = '<option value="">Todas</option>';
+  document.getElementById("filtroMes").innerHTML = '<span class="estado">Meses de defunción: se llenan al cargar la base.</span>';
+  actualizarEstadoFiltro();
+  actualizarBoton();
+});
+
+document.getElementById("buscar").addEventListener("input", (e) => {
+  estado.texto = e.target.value;
+  pintarDetalle();
+});
+
+const filtrar = (fn) => estado.cotejo.filas.filter(fn);
+const T_ENC = "Defunciones en Servicios de Salud IMSS Bienestar localizadas en Egresos o Urgencias por defunción";
+const T_SIN = "Defunciones en Servicios de Salud IMSS Bienestar sin registro por defunción en Egresos ni en Urgencias";
+document.getElementById("expResumen").addEventListener("click", () => {
+  descargar([["Resumen por CLUES", hojaResumen()]], "Cotejo_OCURRENCIA_resumen_por_CLUES.xlsx");
+});
+document.getElementById("expEncontrados").addEventListener("click", () => {
+  descargar([["Coincidencias", hojaRegistros(filtrar((f) => f.resultado !== "SIN"), T_ENC)]], "Cotejo_OCURRENCIA_coincidencias.xlsx");
+});
+document.getElementById("expFaltantes").addEventListener("click", () => {
+  descargar([["No localizados", hojaRegistros(filtrar((f) => f.resultado === "SIN"), T_SIN)]], "Cotejo_OCURRENCIA_no_localizados.xlsx");
+});
+document.getElementById("expTodo").addEventListener("click", () => {
+  descargar([
+    ["Resumen por CLUES", hojaResumen()],
+    ["Coincidencias", hojaRegistros(filtrar((f) => f.resultado !== "SIN"), T_ENC)],
+    ["No localizados", hojaRegistros(filtrar((f) => f.resultado === "SIN"), T_SIN)],
+  ], "Cotejo_OCURRENCIA_vs_Egresos_Urgencias_completo.xlsx");
+});
+
+actualizarBoton();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Auditoría de calidad · Base de Nacimientos</title>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin></script>
+<style>
+  :root{
+    --bg:#F5F5F5; --panel:#FFFFFF; --ink:#2B2320; --inkSoft:#8A8079; --line:#E7E3DD;
+    --red:#A41E22; --redDark:#7A1418; --redSoft:#F1DCDD; --gold:#C9A34E; --goldSoft:#F3E9D2;
+    --brown:#B89B6B; --verde:#2E7D32; --verdeSoft:#E8F3E9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .contenedor{max-width:1280px;margin:0 auto;padding:22px 22px 60px}
+  header.barra{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,var(--red) 0%,var(--redDark) 100%);
+    color:#fff;border-radius:16px;padding:22px 26px;box-shadow:0 10px 26px rgba(164,30,34,.24);flex-wrap:wrap}
+  header.barra .marca{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+  h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:clamp(20px,3vw,27px);margin:0;line-height:1.15}
+  .sub{font-size:12px;opacity:.85;margin-top:3px}
+  .adscripcion{margin-left:auto;text-align:right;font-size:12.5px;font-weight:700;letter-spacing:.02em;line-height:1.45}
+  .adscripcion span{color:var(--gold);display:block}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:18px}
+  .panel h2{font-size:14px;font-weight:700;margin:0 0 10px}
+  .cargas{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:18px}
+  .zona{border:2px dashed var(--line);border-radius:14px;padding:22px 18px;text-align:center;background:var(--panel);
+    transition:border-color .15s,background .15s;cursor:pointer}
+  .zona:hover,.zona.encima{border-color:var(--red);background:var(--redSoft)}
+  .zona.lista{border-style:solid;border-color:var(--verde);background:var(--verdeSoft);cursor:default}
+  .zona .titulo{font-size:15px;font-weight:700}
+  .zona .pista{font-size:12px;color:var(--inkSoft);margin-top:5px}
+  .zona .estado{font-size:12.5px;color:var(--ink);margin-top:8px;font-weight:600}
+  button{font-family:inherit;font-size:13px;font-weight:700;border-radius:9px;padding:9px 15px;cursor:pointer;border:1px solid transparent}
+  .btn-rojo{background:var(--red);color:#fff}
+  .btn-rojo:disabled{background:var(--inkSoft);opacity:.55;cursor:default}
+  .btn-linea{background:var(--redSoft);color:var(--red);border-color:var(--red)}
+  .btn-suave{background:var(--bg);color:var(--ink);border-color:var(--line)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  .kpi{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi.destacado{background:var(--redSoft);border-color:var(--red)}
+  .kpi.bueno{background:var(--verdeSoft);border-color:var(--verde)}
+  .kpi .et{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--inkSoft)}
+  .kpi .val{font-family:Georgia,serif;font-size:26px;line-height:1.15;margin-top:3px}
+  .kpi.destacado .val{color:var(--red)}
+  .kpi.bueno .val{color:var(--verde)}
+  .kpi .pie{font-size:10.5px;color:var(--inkSoft);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    background:var(--goldSoft);padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0}
+  td{padding:7px 10px;border-bottom:1px solid var(--line)}
+  td.num,th.num{text-align:right}
+  .marco{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .desplaza{max-height:440px;overflow:auto}
+  .pestanas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .pestana{font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel);color:var(--inkSoft);cursor:pointer}
+  .pestana.activa{background:var(--red);color:#fff;border-color:var(--red)}
+  .etiqueta{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;display:inline-block;white-space:nowrap}
+  .et-ok{background:var(--verdeSoft);color:var(--verde)}
+  .et-alerta{background:var(--redSoft);color:var(--red)}
+  .et-nota{background:var(--goldSoft);color:#7A5B12}
+  .estado{font-size:12.5px;color:var(--inkSoft)}
+  .oculto{display:none}
+  .fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .crece{margin-left:auto}
+  .aviso{border-radius:12px;padding:12px 15px;margin-top:14px;font-size:12.5px;line-height:1.6}
+  .aviso.nota{background:var(--goldSoft);border:1px solid var(--gold)}
+  .aviso.alerta{background:var(--redSoft);border:1.5px solid var(--red)}
+  .aviso.ok{background:var(--verdeSoft);border:1.5px solid var(--verde)}
+  input[type=search]{font-family:inherit;font-size:13px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;min-width:220px}
+  .pie-pagina{text-align:center;font-size:11.5px;color:var(--inkSoft);margin-top:26px;line-height:1.6}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  @media(max-width:760px){.adscripcion{margin-left:0;text-align:left;width:100%}}
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header class="barra">
+    <div class="marca">✚</div>
+    <div>
+      <h1>Auditoría de calidad de la base de Nacimientos</h1>
+      <div class="sub">Madres menores de edad · CURP genérico o inválido · Anomalías sin codificar · Posibles duplicados</div>
+    </div>
+    <div class="adscripcion">
+      DIRECCIÓN DE INFORMACIÓN Y TECNOLOGÍAS.
+      <span>DEPARTAMENTO DE INFORMACIÓN EN SALUD, ANÁLISIS E INTERPRETACIÓN.</span>
+    </div>
+  </header>
+
+  <div class="cargas">
+    <div class="zona" id="zonaNacimientos">
+      <div class="titulo">Base de Nacimientos (SINAC)</div>
+      <div class="pista">Archivo .xlsx con el reporte de nacimientos; se leen únicamente las columnas necesarias</div>
+      <div class="estado" id="estadoNacimientos">Arrastra el archivo o haz clic para elegirlo</div>
+      <input type="file" id="archivoNacimientos" accept=".xlsx,.xlsm" class="oculto" />
+    </div>
+  </div>
+
+  <div class="fila" style="margin-top:16px">
+    <button class="btn-rojo" id="validar" disabled>Validar la base</button>
+    <button class="btn-suave" id="limpiar">Limpiar</button>
+    <span class="estado" id="estadoGeneral"></span>
+  </div>
+
+  <div id="resultado" class="oculto">
+    <div class="panel">
+      <div class="fila">
+        <h2 style="margin:0">Resumen de la auditoría</h2>
+        <div class="crece fila">
+          <button class="btn-suave" id="expTodo">Exportar todo en un libro</button>
+        </div>
+      </div>
+      <div class="kpis" style="margin-top:12px" id="kpis"></div>
+      <div id="avisos"></div>
+    </div>
+
+    <div class="panel">
+      <div class="fila">
+        <h2 style="margin:0" id="tituloVista">Detalle</h2>
+        <div class="crece fila">
+          <input type="search" id="buscar" placeholder="Buscar por FOLIO, CURP o CLUES" />
+          <button class="btn-linea" id="expVista">Exportar esta vista</button>
+        </div>
+      </div>
+      <div class="pestanas" style="margin-top:12px" id="pestanas"></div>
+      <div class="estado" id="descVista" style="margin-bottom:8px"></div>
+      <div class="marco desplaza">
+        <table>
+          <thead><tr id="encabezadoDetalle"></tr></thead>
+          <tbody id="cuerpoDetalle"></tbody>
+        </table>
+      </div>
+      <div class="estado" id="pieDetalle" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="pie-pagina">
+    Secretaría de Salud de Tamaulipas · El archivo se lee en tu navegador; no se sube a ningún servidor.
+  </div>
+</div>
+
+<script>
+// ===========================================================================
+// LECTOR DE ARCHIVOS XLSX GRANDES (lectura por partes, sin cargar todo a RAM)
+// ===========================================================================
+const XLSX_STREAM_DESDE = 8 * 1024 * 1024;
+
+function hayLecturaPorPartes() {
+  return typeof DecompressionStream !== "undefined" && typeof TextDecoderStream !== "undefined";
+}
+function letrasAIndice(letras) {
+  let n = 0;
+  for (let i = 0; i < letras.length; i++) n = n * 26 + (letras.charCodeAt(i) - 64);
+  return n - 1;
+}
+function desescaparXml(t) {
+  if (t.indexOf("&") < 0) return t;
+  return t
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, "&");
+}
+async function leerDirectorioZip(file) {
+  const cola = Math.min(file.size, 66000);
+  const buf = new DataView(await file.slice(file.size - cola).arrayBuffer());
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= 0; i--) {
+    if (buf.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("El archivo no parece un .xlsx válido.");
+  const numEntradas = buf.getUint16(eocd + 10, true);
+  const tamDirectorio = buf.getUint32(eocd + 12, true);
+  const inicioDirectorio = buf.getUint32(eocd + 16, true);
+  if (inicioDirectorio === 0xffffffff) throw new Error("zip64");
+  const dv = new DataView(await file.slice(inicioDirectorio, inicioDirectorio + tamDirectorio).arrayBuffer());
+  const decoder = new TextDecoder();
+  const entradas = new Map();
+  let p = 0;
+  for (let i = 0; i < numEntradas && p + 46 <= dv.byteLength; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const metodo = dv.getUint16(p + 10, true);
+    const comprimido = dv.getUint32(p + 20, true);
+    const largoNombre = dv.getUint16(p + 28, true);
+    const largoExtra = dv.getUint16(p + 30, true);
+    const largoComentario = dv.getUint16(p + 32, true);
+    const desplazamiento = dv.getUint32(p + 42, true);
+    const nombre = decoder.decode(new Uint8Array(dv.buffer, dv.byteOffset + p + 46, largoNombre));
+    entradas.set(nombre, { metodo, comprimido, desplazamiento });
+    p += 46 + largoNombre + largoExtra + largoComentario;
+  }
+  return entradas;
+}
+async function flujoDeEntrada(file, entrada) {
+  const cabecera = new DataView(await file.slice(entrada.desplazamiento, entrada.desplazamiento + 30).arrayBuffer());
+  if (cabecera.getUint32(0, true) !== 0x04034b50) throw new Error("Cabecera del ZIP no reconocida.");
+  const largoNombre = cabecera.getUint16(26, true);
+  const largoExtra = cabecera.getUint16(28, true);
+  const inicio = entrada.desplazamiento + 30 + largoNombre + largoExtra;
+  const trozo = file.slice(inicio, inicio + entrada.comprimido);
+  if (entrada.metodo === 0) return trozo.stream();
+  if (entrada.metodo !== 8) throw new Error("El .xlsx usa una compresión no soportada.");
+  return trozo.stream().pipeThrough(new DecompressionStream("deflate-raw"));
+}
+async function textoDeEntrada(file, entrada) {
+  return await new Response(await flujoDeEntrada(file, entrada)).text();
+}
+const RE_FILA = /<row[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g;
+const RE_CELDA = /<c\s+r="([A-Z]+)\d+"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+const RE_VALOR = /<v>([\s\S]*?)<\/v>/;
+const RE_TEXTO_EN_LINEA = /<t[^>]*>([\s\S]*?)<\/t>/g;
+function celdasDeFila(xml, cadenas) {
+  const celdas = [];
+  RE_CELDA.lastIndex = 0;
+  let m;
+  while ((m = RE_CELDA.exec(xml)) !== null) {
+    const col = letrasAIndice(m[1]);
+    const atributos = m[2] || "";
+    const cuerpo = m[3];
+    if (cuerpo === undefined) { celdas[col] = null; continue; }
+    const tipo = (atributos.match(/t="([^"]+)"/) || [])[1] || "n";
+    if (tipo === "s") {
+      const v = RE_VALOR.exec(cuerpo);
+      celdas[col] = v ? cadenas[Number(v[1])] : null;
+    } else if (tipo === "inlineStr") {
+      let texto = "";
+      RE_TEXTO_EN_LINEA.lastIndex = 0;
+      let t;
+      while ((t = RE_TEXTO_EN_LINEA.exec(cuerpo)) !== null) texto += desescaparXml(t[1]);
+      celdas[col] = texto;
+    } else {
+      const v = RE_VALOR.exec(cuerpo);
+      if (!v) { celdas[col] = null; continue; }
+      const bruto = desescaparXml(v[1]);
+      if (tipo === "str" || tipo === "e") celdas[col] = bruto;
+      else if (tipo === "b") celdas[col] = bruto === "1" ? "SI" : "NO";
+      else {
+        const n = Number(bruto);
+        celdas[col] = Number.isFinite(n) ? n : bruto;
+      }
+    }
+  }
+  return celdas;
+}
+function fechaDeSerie(n) {
+  if (!Number.isFinite(n) || n <= 0 || n > 80000) return null;
+  const ms = Math.round((n - 25569) * 86400000);
+  const d = new Date(ms);
+  return isNaN(d) ? null : d;
+}
+async function leerXlsxPorPartes(file, utiles, alAvanzar) {
+  const entradas = await leerDirectorioZip(file);
+  const relaciones = entradas.get("xl/_rels/workbook.xml.rels");
+  const libro = entradas.get("xl/workbook.xml");
+  let rutaHoja = null;
+  if (libro && relaciones) {
+    const xmlLibro = await textoDeEntrada(file, libro);
+    const xmlRel = await textoDeEntrada(file, relaciones);
+    const hojas = [...xmlLibro.matchAll(/<sheet[^>]*name="([^"]*)"[^>]*r:id="([^"]*)"/g)];
+    if (hojas.length) {
+      const rel = new RegExp('Id="' + hojas[0][2] + '"[^>]*Target="([^"]*)"').exec(xmlRel);
+      if (rel) rutaHoja = rel[1].replace(/^\//, "").replace(/^xl\//, "");
+    }
+  }
+  let entradaHoja = rutaHoja ? entradas.get("xl/" + rutaHoja) : null;
+  if (!entradaHoja) {
+    let mayor = 0;
+    entradas.forEach((v, k) => {
+      if (k.indexOf("xl/worksheets/") === 0 && k.slice(-4) === ".xml" && v.comprimido > mayor) {
+        mayor = v.comprimido;
+        entradaHoja = v;
+      }
+    });
+  }
+  if (!entradaHoja) throw new Error("No se encontró la hoja de datos dentro del archivo.");
+  let cadenas = [];
+  const entradaCadenas = entradas.get("xl/sharedStrings.xml");
+  if (entradaCadenas) {
+    const xml = await textoDeEntrada(file, entradaCadenas);
+    const partes = xml.split("<si>");
+    cadenas = new Array(Math.max(0, partes.length - 1));
+    for (let i = 1; i < partes.length; i++) {
+      const si = partes[i];
+      let texto = "";
+      RE_TEXTO_EN_LINEA.lastIndex = 0;
+      let t;
+      while ((t = RE_TEXTO_EN_LINEA.exec(si)) !== null) texto += t[1];
+      cadenas[i - 1] = desescaparXml(texto);
+    }
+  }
+  const lector = (await flujoDeEntrada(file, entradaHoja)).pipeThrough(new TextDecoderStream()).getReader();
+  let resto = "";
+  let encabezado = null;
+  let indices = null;
+  const registros = [];
+  const comparable = (t) => String(t).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
+  const buscados = utiles && utiles.length ? new Map(utiles.map((c) => [comparable(c), c])) : null;
+  const procesa = (xmlFila) => {
+    const celdas = celdasDeFila(xmlFila, cadenas);
+    if (!encabezado) {
+      encabezado = celdas.map((c) => (c == null ? "" : String(c).trim()));
+      indices = [];
+      encabezado.forEach((col, j) => {
+        if (col === "") return;
+        if (buscados) {
+          const nombre = buscados.get(comparable(col));
+          if (nombre !== undefined && !indices.some((par) => par[0] === nombre)) indices.push([nombre, j, /^fecha/i.test(nombre)]);
+        } else {
+          indices.push([col, j, /^fecha/i.test(col)]);
+        }
+      });
+      return;
+    }
+    const obj = {};
+    for (let k = 0; k < indices.length; k++) {
+      let v = celdas[indices[k][1]];
+      if (v === undefined) v = null;
+      if (indices[k][2] && typeof v === "number") v = fechaDeSerie(v) || v;
+      obj[indices[k][0]] = v;
+    }
+    registros.push(obj);
+  };
+  while (true) {
+    const { done, value } = await lector.read();
+    if (value) resto += value;
+    let ultimo = 0;
+    RE_FILA.lastIndex = 0;
+    let m;
+    while ((m = RE_FILA.exec(resto)) !== null) {
+      procesa(m[1] || "");
+      ultimo = RE_FILA.lastIndex;
+    }
+    resto = ultimo ? resto.slice(ultimo) : resto;
+    if (alAvanzar && registros.length) alAvanzar(registros.length);
+    if (done) break;
+  }
+  return { encabezado: encabezado || [], registros };
+}
+
+// ===========================================================================
+// AUDITORÍA DE CALIDAD · BASE DE NACIMIENTOS
+// ===========================================================================
+const MEMBRETE = [
+  "SECRETARIA DE SALUD DE TAMAULIPAS",
+  "DIRECCION GENERAL DE PLANEACION Y DESARROLLO DE SECTOR SALUD",
+  "DIRECCIÓN DE INFORMACIÓN Y TECNOLOGÍAS",
+  "DEPARTAMENTO DE INFORMACIÓN EN SALUD, ANÁLISIS E INTERPRETACIÓN",
+];
+const FUENTE = "FUENTE: BASE DE NACIMIENTOS SINAC";
+
+// Columnas que se leen del archivo de nacimientos
+const CAMPOS_NACIMIENTOS = [
+  "FOLIO", "CURPMADRE", "FECHANACIMIENTOMADRE", "EDAD",
+  "FECHANACIMIENTO", "HORANACIMIENTO", "SEXO", "SEXOD",
+  "PRODUCTOEMBARAZO", "PRODUCTOEMBARAZOD", "ORDENPRODUCTO", "TOTALPRODUCTOS",
+  "ANOMALIACIE1", "CODIGOCIEANOMALIA1", "ANOMALIACIE2", "CODIGOCIEANOMALIA2",
+  "CLUES", "NOMBREUNIDAD", "FECHACERTIFICADO", "ESTADO_CAPTURA", "MUNICIPIOPARTOD", "LUGARNACIMIENTOD",
+];
+
+// Distrito jurisdiccional según el municipio donde ocurrió el parto (MUNICIPIOPARTOD)
+const DISTRITO_POR_MUNICIPIO = {
+  "HIDALGO": "01 VICTORIA",
+  "VICTORIA": "01 VICTORIA",
+  "CIUDAD MADERO": "02 TAMPICO",
+  "PANUCO": "02 TAMPICO",
+  "TAMPICO": "02 TAMPICO",
+  "MATAMOROS": "03 MATAMOROS",
+  "REYNOSA": "04 REYNOSA",
+  "NUEVO LAREDO": "05 NUEVO LAREDO",
+  "EL MANTE": "06 MANTE",
+  "SAN FERNANDO": "07 SAN FERNANDO",
+  "TULA": "08 JAUMAVE",
+  "BUSTAMANTE": "08 JAUMAVE",
+  "CAMARGO": "09 MIGUEL ALEMAN",
+  "MIGUEL ALEMAN": "09 MIGUEL ALEMAN",
+  "RIO BRAVO": "10 VALLE HERMOSO",
+  "VALLE HERMOSO": "10 VALLE HERMOSO",
+  "ABASOLO": "11 PADILLA",
+  "SAN CARLOS": "11 PADILLA",
+  "SOTO LA MARINA": "11 PADILLA",
+  "JIMENEZ": "11 PADILLA",
+  "ALDAMA": "12 ALTAMIRA",
+  "ALTAMIRA": "12 ALTAMIRA",
+  "GONZALEZ": "12 ALTAMIRA",
+};
+function obtenDistrito(municipioPartoD) {
+  const m = normalizaTexto(municipioPartoD).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return DISTRITO_POR_MUNICIPIO[m] || "SIN DISTRITO ASIGNADO";
+}
+
+function normalizaTexto(v) {
+  if (v == null) return "";
+  return String(v).trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+function textoCelda(v) {
+  if (v == null) return "";
+  if (v instanceof Date) return v.toLocaleDateString("es-MX");
+  return String(v);
+}
+function fechaClave(v) {
+  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+  if (v == null) return "";
+  return normalizaTexto(v);
+}
+function escapar(t) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+const estado = {
+  nacimientos: null, nacimientosNombre: null,
+  cotejo: null, vista: "MENORES", texto: "",
+};
+
+// --- Carga de archivo --------------------------------------------------------
+async function cargarArchivo(file) {
+  const cajaEstado = document.getElementById("estadoNacimientos");
+  const zona = document.getElementById("zonaNacimientos");
+  cajaEstado.textContent = "Leyendo " + file.name + "…";
+  zona.classList.remove("lista");
+  try {
+    let registros;
+    if (file.size >= XLSX_STREAM_DESDE && hayLecturaPorPartes()) {
+      const salida = await leerXlsxPorPartes(file, CAMPOS_NACIMIENTOS, null);
+      registros = salida.registros;
+    } else {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
+      let hoja = wb.SheetNames[0];
+      let filas = -1;
+      wb.SheetNames.forEach((n) => {
+        const ref = wb.Sheets[n] && wb.Sheets[n]["!ref"];
+        const r = ref ? XLSX.utils.decode_range(ref).e.r : -1;
+        if (r > filas) { filas = r; hoja = n; }
+      });
+      const matriz = XLSX.utils.sheet_to_json(wb.Sheets[hoja], { header: 1, defval: null, blankrows: false });
+      const encabezado = (matriz[0] || []).map((c) => (c == null ? "" : String(c).trim()));
+      const comparable = (t) => String(t).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
+      const buscados = new Map(CAMPOS_NACIMIENTOS.map((c) => [comparable(c), c]));
+      const indices = [];
+      encabezado.forEach((col, j) => {
+        const nombre = buscados.get(comparable(col));
+        if (nombre !== undefined && !indices.some((p) => p[0] === nombre)) indices.push([nombre, j]);
+      });
+      registros = [];
+      for (let i = 1; i < matriz.length; i++) {
+        const fila = matriz[i];
+        if (!fila) continue;
+        const obj = {};
+        indices.forEach(([nombre, j]) => { obj[nombre] = fila[j] === undefined ? null : fila[j]; });
+        registros.push(obj);
+      }
+    }
+    if (!registros.length) throw new Error("el archivo no trajo registros");
+    estado.nacimientos = registros;
+    estado.nacimientosNombre = file.name;
+    cajaEstado.textContent = `${file.name} · ${registros.length.toLocaleString("es-MX")} nacimientos`;
+    zona.classList.add("lista");
+  } catch (err) {
+    cajaEstado.textContent = "No se pudo leer: " + (err.message || "archivo no válido");
+  }
+  document.getElementById("validar").disabled = !estado.nacimientos;
+}
+
+// --- Validaciones -------------------------------------------------------------
+const REGEX_CURP = /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/;
+
+function evaluaCurp(curpRaw) {
+  const curp = normalizaTexto(curpRaw).replace(/\s+/g, "");
+  if (!curp) return { tipo: "VACIO", mensaje: "CURP de la madre vacío" };
+  if (curp.length === 18 && /^[X9]+$/.test(curp)) {
+    return { tipo: "GENERICO", mensaje: "CURP genérico (madre no identificada), formato tipo XXXX999999" };
+  }
+  if (curp.length !== 18) return { tipo: "INVALIDO", mensaje: `CURP con ${curp.length} caracteres (debe tener 18)` };
+  if (!REGEX_CURP.test(curp)) return { tipo: "INVALIDO", mensaje: "CURP no cumple el formato estándar (18 posiciones)" };
+  return null;
+}
+
+function esSinAnomalia(desc) {
+  const d = normalizaTexto(desc);
+  return d === "" || d === "NINGUNA APARENTE" || d === "NINGUNA" || d === "NINGUNO" || d === "NO" || d === "N/A";
+}
+function esSinCodigo(cod) {
+  if (cod == null) return true;
+  const c = String(cod).trim();
+  if (c === "" || c === "0") return true;
+  const n = Number(c);
+  return Number.isFinite(n) && n === 0;
+}
+function evaluaAnomalia(desc, cod, slot) {
+  const sinAnom = esSinAnomalia(desc);
+  const sinCod = esSinCodigo(cod);
+  if (!sinAnom && sinCod) {
+    return { tipo: "SIN_CODIGO", slot, mensaje: `Anomalía ${slot} reportada ("${textoCelda(desc)}") sin código CIE-10 asignado` };
+  }
+  if (sinAnom && !sinCod) {
+    return { tipo: "CODIGO_HUERFANO", slot, mensaje: `Código CIE-10 "${textoCelda(cod)}" capturado en anomalía ${slot} sin descripción de anomalía` };
+  }
+  return null;
+}
+
+function esGestacionMultiple(productoDes) {
+  const p = normalizaTexto(productoDes);
+  return p.indexOf("GEMEL") >= 0 || p.indexOf("TRILL") >= 0 || p.indexOf("CUADRU") >= 0 || p.indexOf("MULTIPLE") >= 0;
+}
+
+function validar() {
+  const regs = estado.nacimientos;
+
+  // 1) Madres menores de edad --------------------------------------------------
+  const menores = regs.filter((r) => {
+    const e = Number(r["EDAD"]);
+    return Number.isFinite(e) && e > 0 && e < 18;
+  });
+
+  // 2) CURP genérico / inválido / vacío ----------------------------------------
+  const curpProblemas = [];
+  regs.forEach((r) => {
+    const ev = evaluaCurp(r["CURPMADRE"]);
+    if (ev) curpProblemas.push({ registro: r, tipo: ev.tipo, mensaje: ev.mensaje });
+  });
+
+  // 3) Anomalías sin codificar / código sin anomalía ---------------------------
+  const anomaliaProblemas = [];
+  regs.forEach((r) => {
+    const e1 = evaluaAnomalia(r["ANOMALIACIE1"], r["CODIGOCIEANOMALIA1"], 1);
+    if (e1) anomaliaProblemas.push({ registro: r, ...e1 });
+    const e2 = evaluaAnomalia(r["ANOMALIACIE2"], r["CODIGOCIEANOMALIA2"], 2);
+    if (e2) anomaliaProblemas.push({ registro: r, ...e2 });
+  });
+
+  // 4) Posibles duplicados: misma madre (CURP válido) + mismo día de nacimiento
+  //    de la bebé, cuando no corresponde a un embarazo gemelar/múltiple real.
+  const grupos = new Map();
+  regs.forEach((r) => {
+    if (evaluaCurp(r["CURPMADRE"])) return; // se excluyen CURP genéricos/inválidos/vacíos: no identifican de forma confiable a la madre
+    const clave = normalizaTexto(r["CURPMADRE"]).replace(/\s+/g, "") + "|" + fechaClave(r["FECHANACIMIENTO"]);
+    if (!fechaClave(r["FECHANACIMIENTO"])) return;
+    if (!grupos.has(clave)) grupos.set(clave, []);
+    grupos.get(clave).push(r);
+  });
+  const duplicados = [];
+  grupos.forEach((lista, clave) => {
+    if (lista.length < 2) return;
+    const hayUnico = lista.some((r) => !esGestacionMultiple(r["PRODUCTOEMBARAZOD"]));
+    const ordenes = lista.map((r) => r["ORDENPRODUCTO"]).filter((x) => x != null);
+    const ordenesRepetidos = new Set(ordenes).size < ordenes.length;
+    const totalDeclarado = Math.max(0, ...lista.map((r) => Number(r["TOTALPRODUCTOS"]) || 0));
+    const excedeTotal = totalDeclarado > 0 && lista.length > totalDeclarado;
+    if (hayUnico || ordenesRepetidos || excedeTotal) {
+      let motivo = [];
+      if (hayUnico) motivo.push("al menos un registro está marcado como embarazo ÚNICO");
+      if (ordenesRepetidos) motivo.push("se repite el mismo número de orden de producto");
+      if (excedeTotal) motivo.push(`hay más registros (${lista.length}) que productos declarados (${totalDeclarado})`);
+      lista.forEach((r) => duplicados.push({ registro: r, grupo: clave, tamano: lista.length, motivo: motivo.join("; ") }));
+    }
+  });
+
+  estado.cotejo = {
+    total: regs.length,
+    menores, curpProblemas, anomaliaProblemas, duplicados,
+    clues: new Set(regs.map((r) => normalizaTexto(r["CLUES"]))).size,
+  };
+  pintar();
+}
+
+// --- Pantalla -----------------------------------------------------------------
+const VISTAS = {
+  MENORES: {
+    titulo: "Madres menores de edad",
+    desc: "Registros donde la edad de la madre reportada es menor a 18 años.",
+    columnas: ["FOLIO", "CLUES", "Unidad", "Lugar de nacimiento", "Municipio de parto", "Distrito", "CURP madre", "Edad madre", "Fecha nac. madre", "Fecha nac. bebé", "Sexo", "Fecha certificado"],
+    filas: (c) => c.menores,
+    pinta: (r) => [
+      textoCelda(r["FOLIO"]), textoCelda(r["CLUES"]), textoCelda(r["NOMBREUNIDAD"]),
+      textoCelda(r["LUGARNACIMIENTOD"]) || "—",
+      textoCelda(r["MUNICIPIOPARTOD"]) || "—", obtenDistrito(r["MUNICIPIOPARTOD"]),
+      textoCelda(r["CURPMADRE"]) || "—", textoCelda(r["EDAD"]),
+      textoCelda(r["FECHANACIMIENTOMADRE"]), textoCelda(r["FECHANACIMIENTO"]),
+      textoCelda(r["SEXOD"]), textoCelda(r["FECHACERTIFICADO"]),
+    ],
+    filtra: (r, t) => normalizaTexto(r["FOLIO"]).indexOf(t) >= 0 || normalizaTexto(r["CURPMADRE"]).indexOf(t) >= 0 || normalizaTexto(r["CLUES"]).indexOf(t) >= 0 || normalizaTexto(r["MUNICIPIOPARTOD"]).indexOf(t) >= 0,
+    hoja: (c) => ({ titulo: "Madres menores de edad", cabecera: ["FOLIO", "CLUES", "UNIDAD", "LUGAR DE NACIMIENTO", "MUNICIPIO DE PARTO", "DISTRITO", "CURP MADRE", "EDAD MADRE", "FECHA NAC MADRE", "FECHA NAC BEBE", "SEXO", "FECHA CERTIFICADO"],
+      filas: c.menores.map((r) => [textoCelda(r["FOLIO"]), textoCelda(r["CLUES"]), textoCelda(r["NOMBREUNIDAD"]), textoCelda(r["LUGARNACIMIENTOD"]), textoCelda(r["MUNICIPIOPARTOD"]), obtenDistrito(r["MUNICIPIOPARTOD"]), textoCelda(r["CURPMADRE"]), textoCelda(r["EDAD"]), textoCelda(r["FECHANACIMIENTOMADRE"]), textoCelda(r["FECHANACIMIENTO"]), textoCelda(r["SEXOD"]), textoCelda(r["FECHACERTIFICADO"])]) }),
+  },
+  CURP: {
+    titulo: "CURP genérico o inválido",
+    desc: "CURP de la madre vacío, con formato inválido, o genérico (placeholder tipo XXXX999999) que no identifica a la madre.",
+    columnas: ["FOLIO", "CLUES", "Unidad", "Lugar de nacimiento", "Municipio de parto", "Distrito", "CURP madre", "Problema detectado", "Edad madre", "Fecha nac. bebé"],
+    filas: (c) => c.curpProblemas,
+    pinta: (x) => [
+      textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]),
+      textoCelda(x.registro["LUGARNACIMIENTOD"]) || "—",
+      textoCelda(x.registro["MUNICIPIOPARTOD"]) || "—", obtenDistrito(x.registro["MUNICIPIOPARTOD"]),
+      textoCelda(x.registro["CURPMADRE"]) || "—",
+      `<span class="etiqueta ${x.tipo === "GENERICO" ? "et-alerta" : "et-nota"}">${escapar(x.mensaje)}</span>`,
+      textoCelda(x.registro["EDAD"]), textoCelda(x.registro["FECHANACIMIENTO"]),
+    ],
+    crudo: true,
+    filtra: (x, t) => normalizaTexto(x.registro["FOLIO"]).indexOf(t) >= 0 || normalizaTexto(x.registro["CURPMADRE"]).indexOf(t) >= 0 || normalizaTexto(x.registro["CLUES"]).indexOf(t) >= 0 || normalizaTexto(x.registro["MUNICIPIOPARTOD"]).indexOf(t) >= 0,
+    hoja: (c) => ({ titulo: "CURP genérico o inválido", cabecera: ["FOLIO", "CLUES", "UNIDAD", "LUGAR DE NACIMIENTO", "MUNICIPIO DE PARTO", "DISTRITO", "CURP MADRE", "PROBLEMA", "EDAD MADRE", "FECHA NAC BEBE"],
+      filas: c.curpProblemas.map((x) => [textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]), textoCelda(x.registro["LUGARNACIMIENTOD"]), textoCelda(x.registro["MUNICIPIOPARTOD"]), obtenDistrito(x.registro["MUNICIPIOPARTOD"]), textoCelda(x.registro["CURPMADRE"]), x.mensaje, textoCelda(x.registro["EDAD"]), textoCelda(x.registro["FECHANACIMIENTO"])]) }),
+  },
+  ANOMALIAS: {
+    titulo: "Anomalías sin codificar",
+    desc: "Se describe una anomalía congénita sin su código CIE-10, o hay un código CIE-10 sin anomalía descrita.",
+    columnas: ["FOLIO", "CLUES", "Unidad", "Lugar de nacimiento", "Municipio de parto", "Distrito", "Anomalía", "Código CIE-10", "Motivo de la alerta", "Fecha nac. bebé"],
+    filas: (c) => c.anomaliaProblemas,
+    pinta: (x) => [
+      textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]),
+      textoCelda(x.registro["LUGARNACIMIENTOD"]) || "—",
+      textoCelda(x.registro["MUNICIPIOPARTOD"]) || "—", obtenDistrito(x.registro["MUNICIPIOPARTOD"]),
+      textoCelda(x.registro["ANOMALIACIE" + x.slot]) || "—", textoCelda(x.registro["CODIGOCIEANOMALIA" + x.slot]) || "—",
+      `<span class="etiqueta et-alerta">${escapar(x.mensaje)}</span>`,
+      textoCelda(x.registro["FECHANACIMIENTO"]),
+    ],
+    filtra: (x, t) => normalizaTexto(x.registro["FOLIO"]).indexOf(t) >= 0 || normalizaTexto(x.registro["CLUES"]).indexOf(t) >= 0 || normalizaTexto(x.registro["MUNICIPIOPARTOD"]).indexOf(t) >= 0,
+    hoja: (c) => ({ titulo: "Anomalías sin codificar", cabecera: ["FOLIO", "CLUES", "UNIDAD", "LUGAR DE NACIMIENTO", "MUNICIPIO DE PARTO", "DISTRITO", "ANOMALIA", "CODIGO CIE-10", "MOTIVO", "FECHA NAC BEBE"],
+      filas: c.anomaliaProblemas.map((x) => [textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]), textoCelda(x.registro["LUGARNACIMIENTOD"]), textoCelda(x.registro["MUNICIPIOPARTOD"]), obtenDistrito(x.registro["MUNICIPIOPARTOD"]), textoCelda(x.registro["ANOMALIACIE" + x.slot]), textoCelda(x.registro["CODIGOCIEANOMALIA" + x.slot]), x.mensaje, textoCelda(x.registro["FECHANACIMIENTO"])]) }),
+  },
+  DUPLICADOS: {
+    titulo: "Posibles duplicados",
+    desc: "Misma madre (CURP válido) y mismo día de nacimiento de la bebé, en más de un registro, sin que corresponda a un embarazo gemelar/múltiple real.",
+    columnas: ["Grupo", "FOLIO", "CLUES", "Unidad", "Lugar de nacimiento", "Municipio de parto", "Distrito", "CURP madre", "Fecha nac. bebé", "Hora", "Sexo", "Tipo de producto", "Orden", "Total productos", "Motivo de la alerta"],
+    filas: (c) => c.duplicados,
+    pinta: (x) => [
+      x.grupo.split("|")[0].slice(0, 6) + "…", textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]),
+      textoCelda(x.registro["LUGARNACIMIENTOD"]) || "—",
+      textoCelda(x.registro["MUNICIPIOPARTOD"]) || "—", obtenDistrito(x.registro["MUNICIPIOPARTOD"]),
+      textoCelda(x.registro["CURPMADRE"]), textoCelda(x.registro["FECHANACIMIENTO"]), textoCelda(x.registro["HORANACIMIENTO"]),
+      textoCelda(x.registro["SEXOD"]), textoCelda(x.registro["PRODUCTOEMBARAZOD"]), textoCelda(x.registro["ORDENPRODUCTO"]),
+      textoCelda(x.registro["TOTALPRODUCTOS"]), `<span class="etiqueta et-alerta">${escapar(x.motivo)}</span>`,
+    ],
+    filtra: (x, t) => normalizaTexto(x.registro["FOLIO"]).indexOf(t) >= 0 || normalizaTexto(x.registro["CURPMADRE"]).indexOf(t) >= 0 || normalizaTexto(x.registro["CLUES"]).indexOf(t) >= 0 || normalizaTexto(x.registro["MUNICIPIOPARTOD"]).indexOf(t) >= 0,
+    hoja: (c) => ({ titulo: "Posibles duplicados", cabecera: ["FOLIO", "CLUES", "UNIDAD", "LUGAR DE NACIMIENTO", "MUNICIPIO DE PARTO", "DISTRITO", "CURP MADRE", "FECHA NAC BEBE", "HORA", "SEXO", "TIPO PRODUCTO", "ORDEN", "TOTAL PRODUCTOS", "MOTIVO"],
+      filas: c.duplicados.map((x) => [textoCelda(x.registro["FOLIO"]), textoCelda(x.registro["CLUES"]), textoCelda(x.registro["NOMBREUNIDAD"]), textoCelda(x.registro["LUGARNACIMIENTOD"]), textoCelda(x.registro["MUNICIPIOPARTOD"]), obtenDistrito(x.registro["MUNICIPIOPARTOD"]), textoCelda(x.registro["CURPMADRE"]), textoCelda(x.registro["FECHANACIMIENTO"]), textoCelda(x.registro["HORANACIMIENTO"]), textoCelda(x.registro["SEXOD"]), textoCelda(x.registro["PRODUCTOEMBARAZOD"]), textoCelda(x.registro["ORDENPRODUCTO"]), textoCelda(x.registro["TOTALPRODUCTOS"]), x.motivo]) }),
+  },
+};
+
+function pintar() {
+  const c = estado.cotejo;
+  document.getElementById("resultado").classList.remove("oculto");
+
+  document.getElementById("kpis").innerHTML = [
+    { et: "Total de nacimientos", val: c.total, pie: estado.nacimientosNombre },
+    { et: "Madres menores de edad", val: c.menores.length, destacado: c.menores.length > 0 },
+    { et: "CURP genérico / inválido", val: c.curpProblemas.length, destacado: c.curpProblemas.length > 0 },
+    { et: "Anomalías sin codificar", val: c.anomaliaProblemas.length, destacado: c.anomaliaProblemas.length > 0 },
+    { et: "Posibles duplicados", val: c.duplicados.length, destacado: c.duplicados.length > 0 },
+    { et: "Unidades médicas", val: c.clues, bueno: true },
+  ].map((k) => `
+    <div class="kpi ${k.destacado ? "destacado" : k.bueno ? "bueno" : ""}">
+      <div class="et">${k.et}</div>
+      <div class="val">${k.val.toLocaleString("es-MX")}</div>
+      ${k.pie ? `<div class="pie">${escapar(k.pie)}</div>` : ""}
+    </div>`).join("");
+
+  const avisos = [];
+  if (c.menores.length > 0) {
+    avisos.push(`<div class="aviso alerta"><strong>⚠ ${c.menores.length.toLocaleString("es-MX")} nacimientos con madre menor de edad.</strong> Revisar en la pestaña «Madres menores de edad».</div>`);
+  }
+  if (c.curpProblemas.length > 0) {
+    const genericos = c.curpProblemas.filter((x) => x.tipo === "GENERICO").length;
+    avisos.push(`<div class="aviso alerta"><strong>⚠ ${c.curpProblemas.length.toLocaleString("es-MX")} registros con CURP de la madre sin codificar correctamente</strong> (${genericos.toLocaleString("es-MX")} genéricos tipo XXXX999999). Estos registros se excluyeron del cotejo de duplicados por madre, ya que su CURP no identifica de forma confiable a la madre.</div>`);
+  }
+  if (c.anomaliaProblemas.length > 0) {
+    avisos.push(`<div class="aviso alerta"><strong>⚠ ${c.anomaliaProblemas.length.toLocaleString("es-MX")} inconsistencias entre la anomalía descrita y su código CIE-10.</strong> Revisar en la pestaña «Anomalías sin codificar».</div>`);
+  }
+  if (c.duplicados.length > 0) {
+    avisos.push(`<div class="aviso alerta"><strong>⚠ ${c.duplicados.length.toLocaleString("es-MX")} registros con posible captura duplicada</strong>: misma madre y mismo día de nacimiento de la bebé, sin tratarse de un embarazo gemelar/múltiple. Revisar en la pestaña «Posibles duplicados».</div>`);
+  }
+  if (!avisos.length) {
+    avisos.push(`<div class="aviso ok"><strong>✓ Sin alertas.</strong> No se encontraron madres menores de edad, problemas de CURP, anomalías sin codificar ni duplicados con los criterios evaluados.</div>`);
+  }
+  document.getElementById("avisos").innerHTML = avisos.join("");
+
+  document.getElementById("pestanas").innerHTML = Object.keys(VISTAS).map((id) => {
+    const n = VISTAS[id].filas(c).length;
+    return `<button class="pestana ${estado.vista === id ? "activa" : ""}" data-v="${id}">${VISTAS[id].titulo} (${n.toLocaleString("es-MX")})</button>`;
+  }).join("");
+  document.querySelectorAll(".pestana").forEach((b) => {
+    b.onclick = () => {
+      estado.vista = b.getAttribute("data-v");
+      document.querySelectorAll(".pestana").forEach((btn) => btn.classList.toggle("activa", btn === b));
+      pintarDetalle();
+    };
+  });
+
+  pintarDetalle();
+}
+
+function filasVisibles() {
+  const v = VISTAS[estado.vista];
+  const c = estado.cotejo;
+  let lista = v.filas(c);
+  const t = normalizaTexto(estado.texto);
+  if (t) lista = lista.filter((x) => v.filtra(x, t));
+  return lista;
+}
+
+function pintarDetalle() {
+  const v = VISTAS[estado.vista];
+  document.getElementById("tituloVista").textContent = v.titulo;
+  document.getElementById("descVista").textContent = v.desc;
+  document.getElementById("encabezadoDetalle").innerHTML = v.columnas.map((h) => `<th>${h}</th>`).join("");
+  const lista = filasVisibles();
+  const muestra = lista.slice(0, 500);
+  document.getElementById("cuerpoDetalle").innerHTML = muestra.map((x) => {
+    const celdas = v.pinta(x);
+    return `<tr>${celdas.map((val) => `<td class="mono">${val}</td>`).join("")}</tr>`;
+  }).join("") || `<tr><td colspan="${v.columnas.length}" style="text-align:center;color:var(--inkSoft);padding:20px">Sin registros en esta vista.</td></tr>`;
+  document.getElementById("pieDetalle").textContent =
+    lista.length > muestra.length
+      ? `Se muestran ${muestra.length} de ${lista.length.toLocaleString("es-MX")} registros. Exporta a Excel para verlos todos.`
+      : `${lista.length.toLocaleString("es-MX")} registros.`;
+}
+
+// --- Eventos de carga ---------------------------------------------------------
+function conectarZona(idZona, idInput) {
+  const zona = document.getElementById(idZona);
+  const input = document.getElementById(idInput);
+  zona.addEventListener("click", () => input.click());
+  zona.addEventListener("dragover", (e) => { e.preventDefault(); zona.classList.add("encima"); });
+  zona.addEventListener("dragleave", () => zona.classList.remove("encima"));
+  zona.addEventListener("drop", (e) => {
+    e.preventDefault(); zona.classList.remove("encima");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) cargarArchivo(e.dataTransfer.files[0]);
+  });
+  input.addEventListener("change", (e) => { if (e.target.files[0]) cargarArchivo(e.target.files[0]); });
+}
+conectarZona("zonaNacimientos", "archivoNacimientos");
+
+document.getElementById("validar").addEventListener("click", () => {
+  document.getElementById("estadoGeneral").textContent = "Validando…";
+  setTimeout(() => {
+    try {
+      validar();
+      document.getElementById("estadoGeneral").textContent = "";
+    } catch (err) {
+      document.getElementById("estadoGeneral").textContent = "Error al validar: " + err.message;
+    }
+  }, 30);
+});
+
+document.getElementById("limpiar").addEventListener("click", () => {
+  estado.nacimientos = null; estado.cotejo = null; estado.vista = "MENORES"; estado.texto = "";
+  document.getElementById("estadoNacimientos").textContent = "Arrastra el archivo o haz clic para elegirlo";
+  document.getElementById("zonaNacimientos").classList.remove("lista");
+  document.getElementById("resultado").classList.add("oculto");
+  document.getElementById("validar").disabled = true;
+  document.getElementById("buscar").value = "";
+});
+
+document.getElementById("buscar").addEventListener("input", (e) => {
+  estado.texto = e.target.value;
+  pintarDetalle();
+});
+
+// --- Exportación a Excel -------------------------------------------------------
+const F = "Calibri";
+function hojaDesdeMatriz(aoa, anchos, filaEncabezado) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const rango = XLSX.utils.decode_range(ws["!ref"]);
+  for (let R = rango.s.r; R <= rango.e.r; R++) {
+    for (let C = rango.s.c; C <= rango.e.c; C++) {
+      const dir = XLSX.utils.encode_cell({ r: R, c: C });
+      const celda = ws[dir];
+      if (!celda) continue;
+      let fuente = { name: F, sz: 11 };
+      if (R < 4) fuente = { name: F, sz: 12, bold: R === 0 };
+      else if (R === 5) fuente = { name: F, sz: 12, bold: true };
+      else if (R === 6) fuente = { name: F, sz: 6 };
+      else if (R === filaEncabezado) fuente = { name: F, sz: 11, bold: true };
+      celda.s = { font: fuente, alignment: { vertical: "center", wrapText: false } };
+      if (celda.v instanceof Date) celda.z = "dd/mm/yyyy";
+    }
+  }
+  ws["!cols"] = anchos.map((w) => ({ wch: w }));
+  ws["!freeze"] = { xSplit: 0, ySplit: filaEncabezado + 1 };
+  ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: filaEncabezado, c: 0 }, e: { r: rango.e.r, c: rango.e.c } }) };
+  return ws;
+}
+function encabezadoLibro(titulo) {
+  return [[MEMBRETE[0]], [MEMBRETE[1]], [MEMBRETE[2]], [MEMBRETE[3]], [], [titulo], [FUENTE], []];
+}
+function hojaResumen() {
+  const c = estado.cotejo;
+  const aoa = encabezadoLibro("Resumen de la auditoría de calidad de nacimientos");
+  aoa.push(["INDICADOR", "TOTAL"]);
+  aoa.push(["TOTAL DE NACIMIENTOS", c.total]);
+  aoa.push(["MADRES MENORES DE EDAD", c.menores.length]);
+  aoa.push(["CURP GENERICO O INVALIDO", c.curpProblemas.length]);
+  aoa.push(["ANOMALIAS SIN CODIFICAR", c.anomaliaProblemas.length]);
+  aoa.push(["POSIBLES DUPLICADOS", c.duplicados.length]);
+  aoa.push(["UNIDADES MEDICAS", c.clues]);
+  return hojaDesdeMatriz(aoa, [40, 16], 8);
+}
+function hojaDeVista(id) {
+  const c = estado.cotejo;
+  const info = VISTAS[id].hoja(c);
+  const aoa = encabezadoLibro(info.titulo);
+  aoa.push(info.cabecera);
+  info.filas.forEach((f) => aoa.push(f));
+  const anchos = info.cabecera.map((h) => (h.length > 12 ? 28 : 16));
+  return hojaDesdeMatriz(aoa, anchos, 8);
+}
+function descargar(hojas, nombreArchivo) {
+  const libro = XLSX.utils.book_new();
+  hojas.forEach(([nombre, hoja]) => XLSX.utils.book_append_sheet(libro, hoja, nombre));
+  XLSX.writeFile(libro, nombreArchivo);
+}
+document.getElementById("expVista").addEventListener("click", () => {
+  const nombres = { MENORES: "Madres_menores_de_edad", CURP: "CURP_generico_o_invalido", ANOMALIAS: "Anomalias_sin_codificar", DUPLICADOS: "Posibles_duplicados" };
+  descargar([[VISTAS[estado.vista].titulo.slice(0, 30), hojaDeVista(estado.vista)]], `Nacimientos_${nombres[estado.vista]}.xlsx`);
+});
+document.getElementById("expTodo").addEventListener("click", () => {
+  descargar([
+    ["Resumen", hojaResumen()],
+    ["Menores de edad", hojaDeVista("MENORES")],
+    ["CURP generico-invalido", hojaDeVista("CURP")],
+    ["Anomalias sin codificar", hojaDeVista("ANOMALIAS")],
+    ["Posibles duplicados", hojaDeVista("DUPLICADOS")],
+  ], "Auditoria_Nacimientos_completo.xlsx");
+});
+</script>
+</body>
+</html>
