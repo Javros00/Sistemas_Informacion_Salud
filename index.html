@@ -27,6 +27,29 @@
   .panel h2{font-size:14px;font-weight:700;margin:0 0 4px}
   .panel p{margin:0;font-size:12.5px;color:var(--inkSoft)}
 
+  button{font-family:inherit;font-size:13px;font-weight:700;border-radius:9px;padding:9px 15px;cursor:pointer;border:1px solid transparent}
+  .btn-rojo{background:var(--red);color:#fff}
+  .btn-rojo:hover{background:var(--redDark)}
+  .btn-suave{background:var(--bg);color:var(--ink);border-color:var(--line)}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+  /* ---------- Acceso ---------- */
+  .acceso{max-width:430px;margin:40px auto 0;background:var(--panel);border:1px solid var(--line);
+    border-top:4px solid var(--red);border-radius:14px;padding:26px 26px 22px}
+  .acceso .candado{width:44px;height:44px;border-radius:11px;background:var(--redSoft);color:var(--red);
+    display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+  .acceso h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:21px;margin:0 0 4px}
+  .acceso p{margin:0 0 16px;font-size:12.5px;color:var(--inkSoft)}
+  .acceso label{display:block;font-size:12.5px;font-weight:700;margin-bottom:6px}
+  .campo{display:flex;gap:8px}
+  .campo input{flex:1;min-width:0;font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:9px}
+  .campo input.error{border-color:var(--red);background:var(--redSoft)}
+  .mensaje{min-height:20px;font-size:12.5px;color:var(--red);font-weight:600;margin-top:8px}
+  .acceso .entrar{width:100%;margin-top:6px;padding:11px 15px;font-size:14px}
+  @keyframes sacude{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .sacude{animation:sacude .25s 2}
+
+  /* ---------- Menú ---------- */
   .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:18px}
   a.opcion{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);
     background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 18px;
@@ -46,11 +69,14 @@
     background:var(--red);color:#fff}
   a.opcion:hover .abrir{background:var(--redDark)}
 
+  .fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .crece{margin-left:auto}
   .aviso{border-radius:12px;padding:12px 15px;margin-top:18px;font-size:12.5px;line-height:1.6;
     background:var(--goldSoft);border:1px solid var(--gold)}
   .pie-pagina{text-align:center;font-size:11.5px;color:var(--inkSoft);margin-top:26px;line-height:1.6}
+  .oculto{display:none !important}
   @media(max-width:760px){.adscripcion{margin-left:0;text-align:left;width:100%}}
-  @media(prefers-reduced-motion:reduce){a.opcion{transition:none}}
+  @media(prefers-reduced-motion:reduce){a.opcion{transition:none}.sacude{animation:none}}
 </style>
 </head>
 <body>
@@ -68,65 +94,185 @@
     </div>
   </header>
 
-  <div class="panel">
-    <h2>Selecciona un programa</h2>
-    <p>Cada programa se abre en una pestaña nueva, así puedes volver a este menú en cualquier momento.</p>
-  </div>
+  <!-- ===== Pantalla de acceso ===== -->
+  <form id="pantallaAcceso" class="acceso" autocomplete="off">
+    <div class="candado" aria-hidden="true">🔒</div>
+    <h2>Acceso restringido</h2>
+    <p>Escribe la clave de acceso para ver los programas.</p>
+    <label for="clave">Clave de acceso</label>
+    <div class="campo">
+      <input id="clave" type="password" autocomplete="current-password" required autofocus />
+      <button type="button" class="btn-suave" id="verClave" aria-label="Mostrar clave">Ver</button>
+    </div>
+    <div class="mensaje" id="mensaje" role="alert"></div>
+    <button type="submit" class="btn-rojo entrar">Entrar</button>
+  </form>
 
-  <nav class="menu" aria-label="Programas disponibles">
+  <!-- ===== Menú (oculto hasta validar la clave) ===== -->
+  <div id="pantallaMenu" class="oculto">
+    <div class="panel fila">
+      <div>
+        <h2>Selecciona un programa</h2>
+        <p>Cada programa tiene un botón “Volver al menú”. La sesión se mantiene hasta que cierres la pestaña o la sesión.</p>
+      </div>
+      <button type="button" class="btn-suave crece" id="salir">Cerrar sesión</button>
+    </div>
 
-    <a class="opcion" href="Tablero_Sistemas_Estadisticos.html" target="_blank" rel="noopener">
-      <div class="cabeza">
-        <div class="num">1</div>
-        <div class="titulo">Tableros de sistemas estadísticos</div>
-      </div>
-      <div class="desc">Tableros interactivos por municipio, unidad, mes y causa para consultar y exportar la información de los sistemas estadísticos.</div>
-      <div class="etiquetas">
-        <span class="etiqueta">Defunciones</span>
-        <span class="etiqueta">Muerte fetal</span>
-        <span class="etiqueta">Nacimientos</span>
-        <span class="etiqueta">Egresos</span>
-        <span class="etiqueta">Urgencias</span>
-      </div>
-      <span class="abrir">Abrir tableros</span>
-    </a>
+    <nav class="menu" aria-label="Programas disponibles" id="menu"></nav>
 
-    <a class="opcion" href="Confronta_Egresos_Urgencias_vs_Defunciones.html" target="_blank" rel="noopener">
-      <div class="cabeza">
-        <div class="num">2</div>
-        <div class="titulo">Confronta Egresos-Urgencias vs Defunciones</div>
-      </div>
-      <div class="desc">Cotejo de la base de defunciones (OCURRENCIA) contra los egresos hospitalarios y las atenciones de urgencias, con resumen por CLUES y registros no localizados.</div>
-      <div class="etiquetas">
-        <span class="etiqueta">Cotejo por folio y nombre</span>
-        <span class="etiqueta">Exporta a Excel</span>
-      </div>
-      <span class="abrir">Abrir confronta</span>
-    </a>
-
-    <a class="opcion" href="Nacimientos.html" target="_blank" rel="noopener">
-      <div class="cabeza">
-        <div class="num">3</div>
-        <div class="titulo">Auditoría de Nacimientos</div>
-      </div>
-      <div class="desc">Revisión de calidad de la base de nacimientos: madres menores de edad, CURP genérico o inválido, anomalías sin codificar y posibles duplicados.</div>
-      <div class="etiquetas">
-        <span class="etiqueta">Calidad del dato</span>
-        <span class="etiqueta">Duplicados</span>
-      </div>
-      <span class="abrir">Abrir auditoría</span>
-    </a>
-
-  </nav>
-
-  <div class="aviso">
-    Guarda este menú en la misma carpeta que los tres programas para que los enlaces funcionen:
-    <b>Tablero_Sistemas_Estadisticos.html</b>, <b>Confronta_Egresos_Urgencias_vs_Defunciones.html</b> y <b>Nacimientos.html</b>.
+    <div class="aviso">
+      Guarda este menú (index.html) en la misma carpeta que los tres programas para que los enlaces funcionen:
+      <b>Tablero_Sistemas_Estadisticos.html</b>, <b>Confronta_Egresos_Urgencias_vs_Defunciones.html</b> y <b>Nacimientos.html</b>.
+    </div>
   </div>
 
   <div class="pie-pagina">
     Secretaría de Salud de Tamaulipas · Los archivos se leen en tu navegador; ninguno se sube a un servidor.
   </div>
 </div>
+
+<script>
+/* =====================================================================
+   CLAVE DE ACCESO
+   La clave no se guarda en texto; solo su huella SHA-256.
+   Para cambiarla, calcula la huella de la nueva clave (instrucciones al
+   final del archivo) y reemplaza el valor de HUELLA_CLAVE.
+   ===================================================================== */
+const HUELLA_CLAVE = "a621b90aded1d6a2dae89440c229126feef0d946051115fdc82a1711781be8e1";
+/* Pase que comparten el menú y los tres programas: SHA-256 de "ISAI-acceso|" + clave.
+   Los programas solo se abren si reciben este pase desde el menú. */
+const PASE_ACCESO = "9b9cfacde204bb8f4e00ab4ee3a8066d068554fb51479e0089095c8f64f27d99";
+const MAX_INTENTOS = 5;          // intentos antes del bloqueo temporal
+const SEGUNDOS_BLOQUEO = 60;
+
+/* Los programas se insertan en la página solo después de validar la clave,
+   así los enlaces no aparecen en la pantalla mientras no se haya entrado. */
+const PROGRAMAS = [
+  { n:1, archivo:"Tablero_Sistemas_Estadisticos.html", titulo:"Tableros de sistemas estadísticos",
+    desc:"Tableros interactivos por municipio, unidad, mes y causa para consultar y exportar la información de los sistemas estadísticos.",
+    etiquetas:["Defunciones","Muerte fetal","Nacimientos","Egresos","Urgencias"], boton:"Abrir tableros" },
+  { n:2, archivo:"Confronta_Egresos_Urgencias_vs_Defunciones.html", titulo:"Confronta Egresos-Urgencias vs Defunciones",
+    desc:"Cotejo de la base de defunciones (OCURRENCIA) contra los egresos hospitalarios y las atenciones de urgencias, con resumen por CLUES y registros no localizados.",
+    etiquetas:["Cotejo por folio y nombre","Exporta a Excel"], boton:"Abrir confronta" },
+  { n:3, archivo:"Nacimientos.html", titulo:"Auditoría de Nacimientos",
+    desc:"Revisión de calidad de la base de nacimientos: madres menores de edad, CURP genérico o inválido, anomalías sin codificar y posibles duplicados.",
+    etiquetas:["Calidad del dato","Duplicados"], boton:"Abrir auditoría" }
+];
+
+const $ = id => document.getElementById(id);
+const leer = (k) => { try { return sessionStorage.getItem(k); } catch(e){ return null; } };
+const guardar = (k,v) => { try { v===null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); } catch(e){} };
+
+async function huella(texto){
+  const datos = new TextEncoder().encode(texto);
+  if (window.crypto && crypto.subtle) {
+    const buf = await crypto.subtle.digest("SHA-256", datos);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  return sha256Respaldo(datos);  // para abrir el archivo desde la carpeta (file://) en navegadores antiguos
+}
+
+function mostrarMenu(){
+  const nav = $("menu");
+  nav.innerHTML = PROGRAMAS.map(p => `
+    <a class="opcion" href="${p.archivo}#acceso=${PASE_ACCESO}">
+      <div class="cabeza"><div class="num">${p.n}</div><div class="titulo">${p.titulo}</div></div>
+      <div class="desc">${p.desc}</div>
+      <div class="etiquetas">${p.etiquetas.map(e => `<span class="etiqueta">${e}</span>`).join("")}</div>
+      <span class="abrir">${p.boton}</span>
+    </a>`).join("");
+  $("pantallaAcceso").classList.add("oculto");
+  $("pantallaMenu").classList.remove("oculto");
+}
+
+function mostrarAcceso(){
+  $("menu").innerHTML = "";
+  $("pantallaMenu").classList.add("oculto");
+  $("pantallaAcceso").classList.remove("oculto");
+  $("clave").value = "";
+  $("clave").focus();
+}
+
+let intentos = 0, bloqueadoHasta = 0;
+
+$("pantallaAcceso").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const campo = $("clave"), msg = $("mensaje");
+  const ahora = Date.now();
+  if (ahora < bloqueadoHasta) {
+    msg.textContent = `Demasiados intentos. Espera ${Math.ceil((bloqueadoHasta-ahora)/1000)} s para volver a intentar.`;
+    return;
+  }
+  if (await huella(campo.value) === HUELLA_CLAVE) {
+    intentos = 0; msg.textContent = ""; campo.classList.remove("error");
+    guardar("paseAcceso", await huella("ISAI-acceso|" + campo.value));
+    mostrarMenu();
+  } else {
+    intentos++;
+    campo.classList.add("error");
+    const form = $("pantallaAcceso");
+    form.classList.remove("sacude"); void form.offsetWidth; form.classList.add("sacude");
+    if (intentos >= MAX_INTENTOS) {
+      bloqueadoHasta = Date.now() + SEGUNDOS_BLOQUEO*1000; intentos = 0;
+      msg.textContent = `Clave incorrecta. El acceso se bloqueó ${SEGUNDOS_BLOQUEO} segundos.`;
+    } else {
+      msg.textContent = `Clave incorrecta. Te quedan ${MAX_INTENTOS-intentos} intentos.`;
+    }
+    campo.select();
+  }
+});
+
+$("clave").addEventListener("input", () => { $("clave").classList.remove("error"); $("mensaje").textContent = ""; });
+$("verClave").addEventListener("click", () => {
+  const c = $("clave"), oculta = c.type === "password";
+  c.type = oculta ? "text" : "password";
+  $("verClave").textContent = oculta ? "Ocultar" : "Ver";
+  $("verClave").setAttribute("aria-label", oculta ? "Ocultar clave" : "Mostrar clave");
+});
+$("salir").addEventListener("click", () => { guardar("paseAcceso", null); mostrarAcceso(); });
+
+/* Entrada directa: pase guardado en esta pestaña o recibido desde un programa con "Volver al menú". */
+(function(){
+  const m = location.hash.match(/acceso=([0-9a-f]{64})/);
+  if (m) { if (m[1] === PASE_ACCESO) guardar("paseAcceso", m[1]); try { history.replaceState(null, "", location.pathname + location.search); } catch(e){} }
+  if (leer("paseAcceso") === PASE_ACCESO || (m && m[1] === PASE_ACCESO)) mostrarMenu();
+})();
+
+/* SHA-256 de respaldo (cuando crypto.subtle no está disponible). */
+function sha256Respaldo(bytes){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const l=bytes.length, n=((l+9+63)>>6)<<6, m=new Uint8Array(n);
+  m.set(bytes); m[l]=0x80;
+  const bits=l*8; for(let i=0;i<8;i++) m[n-1-i]=(i<4)?(bits>>>(8*i))&255:Math.floor(bits/2**(8*i))&255;
+  const r=(x,s)=>(x>>>s)|(x<<(32-s)), W=new Array(64);
+  for(let o=0;o<n;o+=64){
+    for(let t=0;t<16;t++) W[t]=(m[o+4*t]<<24)|(m[o+4*t+1]<<16)|(m[o+4*t+2]<<8)|m[o+4*t+3];
+    for(let t=16;t<64;t++){const s0=r(W[t-15],7)^r(W[t-15],18)^(W[t-15]>>>3), s1=r(W[t-2],17)^r(W[t-2],19)^(W[t-2]>>>10); W[t]=(W[t-16]+s0+W[t-7]+s1)|0;}
+    let [a,b,c,d,e,f,g,h]=H;
+    for(let t=0;t<64;t++){
+      const T1=(h+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+K[t]+W[t])|0;
+      const T2=((r(a,2)^r(a,13)^r(a,22))+((a&b)^(a&c)^(b&c)))|0;
+      h=g; g=f; f=e; e=(d+T1)|0; d=c; c=b; b=a; a=(T1+T2)|0;
+    }
+    H=H.map((v,i)=>(v+[a,b,c,d,e,f,g,h][i])|0);
+  }
+  return H.map(v=>(v>>>0).toString(16).padStart(8,"0")).join("");
+}
+
+/* ---------------------------------------------------------------------
+   CÓMO CAMBIAR LA CLAVE
+   1. Abre este menú en el navegador y presiona F12 → pestaña "Consola".
+   2. Escribe:  nuevaClave("TuNuevaClave")
+   3. Aparecen dos textos largos:
+      - HUELLA_CLAVE → pégalo en HUELLA_CLAVE de este menú.
+      - PASE_ACCESO  → pégalo en PASE_ACCESO de este menú y en los tres
+        programas (búscalo como PASE_ACCESO dentro de cada archivo).
+   --------------------------------------------------------------------- */
+async function nuevaClave(c){
+  console.log("HUELLA_CLAVE =", await huella(c));
+  console.log("PASE_ACCESO  =", await huella("ISAI-acceso|" + c));
+}
+</script>
 </body>
 </html>
